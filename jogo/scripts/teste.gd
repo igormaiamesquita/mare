@@ -15,6 +15,12 @@ func _quadros(n: int) -> void:
 		await get_tree().physics_frame
 
 
+## Quadros de tela (o _process): com a física acelerada, vários quadros de física cabem num só.
+func _tela(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
+
+
 func _apertar(acao: String) -> void:
 	Input.action_press(acao)
 	await _quadros(1)
@@ -45,6 +51,16 @@ func _rodar() -> void:
 	Engine.time_scale = 4.0
 	Engine.max_physics_steps_per_frame = 40
 	await _quadros(5)
+	print("0) primeiros passos")
+	main.tutorial.reiniciar()
+	await _tela(3)
+	if main.tutorial.etapa != 0:
+		return _falhar("primeiros passos não começou no passo 1")
+	j.olhou = 1000.0     # o teste não mexe o mouse
+	await _tela(3)
+	if main.tutorial.etapa != 1:
+		return _falhar("primeiros passos não passou do olhe em volta (etapa %d, ativo %s, iniciado %s)" % [main.tutorial.etapa, main.tutorial.ativo, main.hud.iniciado])
+	print("   passo: ", main.tutorial.titulo(), "  /  bússola: ", main.missoes.alvo().get("txt", "-"))
 	print("1) balde")
 	await _usar(main.item_mais_perto("balde", j.global_position))
 	if not j.tem_balde:
@@ -53,6 +69,18 @@ func _rodar() -> void:
 	await _usar(main.item_mais_perto("galochas", j.global_position))
 	if not j.galochas:
 		return _falhar("não calçou as galochas")
+	await _tela(3)
+	print("   passo: ", main.tutorial.titulo())
+	if main.tutorial.titulo() != "Pegue a tarrafa":
+		return _falhar("primeiros passos não chegou na tarrafa")
+	await _usar(main.item_mais_perto("tarrafa", j.global_position))
+	main.hud.abrir_inventario(true)
+	await _tela(3)
+	main.hud.abrir_inventario(false)
+	await _tela(3)
+	print("   passo: ", main.tutorial.titulo())
+	if main.tutorial.titulo() != "Corte lenha num tronco caído":
+		return _falhar("primeiros passos não chegou na lenha")
 
 	print("2) caranguejos")
 	var tentativas := 0
@@ -130,6 +158,13 @@ func _rodar() -> void:
 	for i in 2:
 		await _usar(main.item_mais_perto("lenha", main.fogao.global_position))
 	print("   lenha na mão: ", j.lenha)
+	main.hud.abrir_mapa(true)
+	await _tela(3)
+	main.hud.abrir_mapa(false)
+	await _tela(3)
+	if main.tutorial.ativo:
+		return _falhar("primeiros passos não terminou (parou em '%s')" % main.tutorial.titulo())
+	print("   primeiros passos concluídos; missão: ", main.missoes.titulo())
 	print("4) fogão")
 	await _usar(main.fogao)   # põe lenha
 	await _usar(main.fogao)   # acende

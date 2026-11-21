@@ -41,6 +41,10 @@ var cortina: ColorRect
 var tela_inicio: Control
 var tela_pausa: Control
 var tela_fim: Control
+var tela_config: Control
+var painel_passos: PanelContainer
+var txt_passos: RichTextLabel
+var _linha_inicio: Control
 var lbl_fim: Label
 var iniciado := false
 var _mapa_aberto := false
@@ -269,7 +273,33 @@ func _ready() -> void:
 	lbl_sono.set_anchors_preset(Control.PRESET_FULL_RECT)
 	lbl_sono.visible = false
 	raiz.add_child(lbl_sono)
+	# ---- primeiros passos (embaixo, no centro)
+	painel_passos = _painel()
+	painel_passos.anchor_left = 0.5
+	painel_passos.anchor_right = 0.5
+	painel_passos.anchor_top = 1.0
+	painel_passos.anchor_bottom = 1.0
+	painel_passos.offset_left = -470
+	painel_passos.offset_right = 470
+	painel_passos.offset_top = -285
+	painel_passos.offset_bottom = -182
+	painel_passos.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	raiz.add_child(painel_passos)
+	txt_passos = RichTextLabel.new()
+	txt_passos.bbcode_enabled = true
+	txt_passos.fit_content = true
+	txt_passos.scroll_active = false
+	txt_passos.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	txt_passos.add_theme_font_size_override("normal_font_size", 20)
+	txt_passos.add_theme_color_override("default_color", BRANCO)
+	painel_passos.add_child(txt_passos)
+	painel_passos.visible = false
+
 	_criar_telas()
+	tela_config = ColorRect.new()
+	tela_config.set_script(load("res://scripts/tela_config.gd"))
+	tela_config.main = main
+	raiz.add_child(tela_config)
 	Mundo.noticia.connect(_noticia)
 	_ligar_mapas.call_deferred()
 	preparar_inicio.call_deferred()
@@ -359,14 +389,17 @@ func _criar_telas() -> void:
 		"MARÉ",
 		"sobrevivência no mangue",
 		"Você mora num rancho na beira do mangue. A comida está na lama, e quem manda no relógio é a maré.\n\n" +
-		"W A S D  andar     SHIFT  correr     ESPAÇO  pular / soltar da lama     M  mapa\n" +
-		"CTRL ou OPTION  agachar     ESPAÇO perto de borda alta  agarrar e subir\n" +
-		"E  usar / pegar / cortar lenha     R  soltar o caranguejo     G  largar o balde     F  lanterna     B  construir jirau-fogão     I  inventário     T  tarrafa (segure e solte)\n\n" +
-		"Na toca:  SEGURE E para enfiar o braço  ·  ESPAÇO para agarrar (centro do verde = pegada forte)  ·  SEGURE E para puxar e SOLTE quando ele puxar\n\n" +
 		"A maré sobe duas vezes por dia. Volte ao rancho ou suba num teso antes que a água chegue no peito.\n" +
-		"Dica: toca com bolinhas de lama fresca na boca costuma ter caranguejo.",
-		"Clique para começar")
-	tela_pausa = _tela_overlay("PAUSA", "", "O jogo salva sozinho a cada 2 minutos, ao dormir e ao fechar a janela.", "Clique para continuar")
+		"Os primeiros passos ensinam os controles; a lista completa fica em Configurações → Controles.",
+		"")
+	tela_pausa = _tela_overlay("PAUSA", "", "O jogo salva sozinho a cada 2 minutos, ao dormir e ao fechar a janela.", "")
+	tela_pausa.set_meta("com_botoes", true)
+	_botoes(tela_pausa, [
+		["Continuar", true, continuar],
+		["Configurações", false, _abrir_config],
+		["Pular os primeiros passos", false, _pular_passos, "pular"],
+		["Salvar e sair", false, _sair],
+	])
 	tela_pausa.visible = false
 	tela_fim = _tela_overlay("CARANGUEJO COM CÉREBRO", "missão concluída", "", "Clique para continuar no mangue")
 	lbl_fim = tela_fim.get_meta("corpo")
@@ -428,41 +461,85 @@ func _clique_tela(e: InputEvent, tela: Control) -> void:
 			continuar()
 
 
-## Tela inicial com jogo salvo: botões Continuar e Novo jogo.
+## Tela inicial: Continuar (se houver jogo salvo), Novo jogo, Configurações e Sair.
 func preparar_inicio() -> void:
-	if main.salvador == null or not main.salvador.existe() or not main.salvador.ativo:
-		return
 	tela_inicio.set_meta("com_botoes", true)
-	var v: VBoxContainer = tela_inicio.get_child(0).get_child(0)
-	v.get_child(v.get_child_count() - 1).visible = false
-	var linha := HBoxContainer.new()
-	linha.alignment = BoxContainer.ALIGNMENT_CENTER
-	linha.add_theme_constant_override("separation", 24)
-	v.add_child(linha)
-	for par in [["Continuar  (" + main.salvador.resumo() + ")", true], ["Novo jogo", false]]:
-		var b := Button.new()
-		b.text = par[0]
-		b.custom_minimum_size = Vector2(320, 56)
-		b.focus_mode = Control.FOCUS_NONE
-		b.add_theme_font_size_override("font_size", 22)
-		var s := StyleBoxFlat.new()
-		s.bg_color = Color(0.16, 0.13, 0.08, 0.95) if par[1] else Color(0.1, 0.1, 0.1, 0.9)
-		s.border_color = DOURADO
-		s.set_border_width_all(2)
-		s.set_corner_radius_all(8)
-		b.add_theme_stylebox_override("normal", s)
-		var s2 := s.duplicate() as StyleBoxFlat
-		s2.bg_color = Color(0.3, 0.24, 0.12, 0.95)
-		b.add_theme_stylebox_override("hover", s2)
-		b.add_theme_color_override("font_color", DOURADO if par[1] else BRANCO)
-		var continuar_jogo: bool = par[1]
-		b.pressed.connect(func() -> void:
-			if continuar_jogo:
-				main.salvador.carregar()
-			else:
-				main.salvador.apagar()
-			comecar())
-		linha.add_child(b)
+	if _linha_inicio != null:
+		_linha_inicio.queue_free()
+	var lista := []
+	if main.salvador != null and main.salvador.existe() and main.salvador.ativo:
+		lista.append(["Continuar  (" + main.salvador.resumo() + ")", true, _continuar_salvo])
+		lista.append(["Novo jogo", false, _novo_jogo])
+	else:
+		lista.append(["Começar", true, comecar])
+	lista.append(["Configurações", false, _abrir_config])
+	lista.append(["Sair", false, get_tree().quit])
+	_linha_inicio = _botoes(tela_inicio, lista)
+
+
+## Linha de botões no fim de uma tela (início/pausa). Cada item: [texto, destaque, ação, nome opcional].
+func _botoes(tela: Control, lista: Array) -> Control:
+	var v: VBoxContainer = tela.get_child(0).get_child(0)
+	v.get_child(v.get_child_count() - 1).visible = false      # o "clique para ..." piscando
+	var coluna := VBoxContainer.new()
+	coluna.alignment = BoxContainer.ALIGNMENT_CENTER
+	coluna.add_theme_constant_override("separation", 10)
+	coluna.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(coluna)
+	for item in lista:
+		var b := _botao(item[0], item[1])
+		b.pressed.connect(item[2])
+		if item.size() > 3:
+			b.name = item[3]
+		coluna.add_child(b)
+	return coluna
+
+
+func _botao(texto: String, destaque: bool) -> Button:
+	var b := Button.new()
+	b.text = texto
+	b.custom_minimum_size = Vector2(420, 54)
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_size_override("font_size", 22)
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.16, 0.13, 0.08, 0.95) if destaque else Color(0.1, 0.1, 0.1, 0.9)
+	s.border_color = DOURADO if destaque else Color(1, 0.8, 0.42, 0.4)
+	s.set_border_width_all(2)
+	s.set_corner_radius_all(8)
+	b.add_theme_stylebox_override("normal", s)
+	var s2 := s.duplicate() as StyleBoxFlat
+	s2.bg_color = Color(0.3, 0.24, 0.12, 0.95)
+	s2.border_color = DOURADO
+	b.add_theme_stylebox_override("hover", s2)
+	b.add_theme_stylebox_override("pressed", s2)
+	b.add_theme_color_override("font_color", DOURADO if destaque else BRANCO)
+	b.add_theme_color_override("font_hover_color", DOURADO)
+	return b
+
+
+func _continuar_salvo() -> void:
+	main.salvador.carregar()
+	comecar()
+
+
+func _novo_jogo() -> void:
+	main.salvador.apagar()
+	comecar()
+
+
+func _abrir_config() -> void:
+	tela_config.abrir()
+
+
+func _pular_passos() -> void:
+	main.tutorial.pular()
+	continuar()
+
+
+func _sair() -> void:
+	if main.salvador.ativo:
+		main.salvador.salvar()
+	get_tree().quit()
 
 
 func comecar() -> void:
@@ -506,9 +583,14 @@ func _unhandled_input(e: InputEvent) -> void:
 			abrir_inventario(false)
 		elif _mapa_aberto:
 			abrir_mapa(false)
+		elif tela_pausa.visible:
+			continuar()
 		elif Mundo.rodando:
 			Mundo.rodando = false
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			var pular := tela_pausa.find_child("pular", true, false)
+			if pular != null:
+				pular.visible = main.tutorial.ativo
 			tela_pausa.visible = true
 	elif e is InputEventMouseButton and e.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and Mundo.rodando:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -757,7 +839,14 @@ func _noticia(texto: String, tipo: String) -> void:
 func _process(_delta: float) -> void:
 	if jogador == null or missoes == null:
 		return
-	lbl_missao.text = "MISSÃO  ·  " + missoes.nome()
+	var passos: bool = main.tutorial.ativo
+	lbl_missao.text = missoes.nome() if passos else "MISSÃO  ·  " + missoes.nome()
+	painel_passos.visible = passos and iniciado and not painel_decisao.visible and not roda.visible and not _inv_aberto and not _mapa_aberto
+	if painel_passos.visible:
+		var d: String = main.tutorial.dica()
+		if txt_passos.get_meta("txt", "") != d:
+			txt_passos.set_meta("txt", d)
+			txt_passos.text = "[center]" + d + "[/center]"
 	obj_texto.text = missoes.titulo()
 	obj_detalhe.text = missoes.detalhe()
 	bussola.yaw = jogador.yaw_bussola()

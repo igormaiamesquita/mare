@@ -18,17 +18,27 @@ var etapa := 0
 var concluido := false
 
 
+func _passos() -> bool:
+	return main.tutorial != null and main.tutorial.ativo
+
+
 func nome() -> String:
+	if _passos():
+		return main.tutorial.nome()
 	return main.barco.nome() if concluido else "Caranguejo com Cérebro"
 
 
 func titulo() -> String:
+	if _passos():
+		return main.tutorial.titulo()
 	if concluido:
 		return main.barco.titulo()
 	return PASSOS[etapa]
 
 
 func detalhe() -> String:
+	if _passos():
+		return main.tutorial.detalhe()
 	if concluido:
 		return main.barco.detalhe()
 	match etapa:
@@ -51,6 +61,8 @@ func detalhe() -> String:
 
 ## Para onde aponta o marcador dourado da bússola.
 func alvo() -> Dictionary:
+	if _passos():
+		return main.tutorial.alvo()
 	if concluido:
 		return main.barco.alvo()
 	match etapa:
@@ -100,5 +112,5 @@ func _process(_delta: float) -> void:
 			concluido = true
 			main.hud.tela_final()
 			Mundo.avisar("Nova missão: Parabólica na Lama. Ache a canoa velha na beira do igarapé.", "objetivo")
-		else:
+		elif not _passos():
 			Mundo.avisar("Novo objetivo: " + PASSOS[etapa], "objetivo")

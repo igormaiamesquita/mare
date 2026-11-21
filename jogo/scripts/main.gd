@@ -21,6 +21,7 @@ var agua: MeshInstance3D
 var jogador
 var hud
 var missoes
+var tutorial
 var fogao
 var tocas: Array = []
 var arvores: Array[Vector3] = []
@@ -97,6 +98,7 @@ func _ready() -> void:
 	var gal := criar_item("galochas", pg)
 	gal.rotation.y = 0.4
 	_montando = false
+	Config.aplicar()
 	_debug()
 
 
@@ -104,12 +106,16 @@ func _ready() -> void:
 func _qualidade() -> void:
 	var vp := get_viewport()
 	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
-	_ajustar_escala()
-	vp.size_changed.connect(_ajustar_escala)
+	ajustar_escala()
+	vp.size_changed.connect(ajustar_escala)
 
 
-func _ajustar_escala() -> void:
+## Escala do 3D: fixa (Configurações) ou automática pelo tamanho da tela.
+func ajustar_escala() -> void:
 	var vp := get_viewport()
+	if Config.escala_fixa() > 0.0:
+		vp.scaling_3d_scale = Config.escala_fixa()
+		return
 	var largura := float(vp.get_visible_rect().size.x)
 	var real := float(DisplayServer.window_get_size().x)
 	vp.scaling_3d_scale = clampf(1500.0 / maxf(real, largura), 0.4, 1.0)
@@ -711,6 +717,8 @@ func _multimesh_em_partes(malha: Mesh, transforms: Array, alcance: float, sombra
 		mmi.position = centro
 		mmi.visibility_range_end = alcance
 		mmi.visibility_range_end_margin = 6.0
+		mmi.set_meta("alcance", alcance)
+		mmi.add_to_group("alcance")
 		mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		if not sombra:
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -1061,6 +1069,11 @@ func _jogador() -> void:
 	missoes.jogador = jogador
 	missoes.fogao = fogao
 	add_child(missoes)
+	tutorial = Node3D.new()
+	tutorial.set_script(load("res://scripts/tutorial.gd"))
+	tutorial.main = self
+	tutorial.jogador = jogador
+	add_child(tutorial)
 
 	hud = CanvasLayer.new()
 	hud.set_script(load("res://scripts/hud.gd"))
@@ -1178,6 +1191,10 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 			hud.abrir_mapa(false)
 		if hud._inv_aberto:
 			hud.abrir_inventario(false)
+		hud.tela_pausa.visible = false
+		hud.tela_config.visible = false
+		if not nome.begins_with("inicio"):
+			hud.tela_inicio.visible = false
 		if nome != "segurando":
 			if jogador.toca != null:
 				jogador.sair_toca()
@@ -1357,6 +1374,18 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 				Mundo.forcar_chuva(0.0)
 				Mundo.hora = 9.0
 				_posicionar(pos_rancho + Vector3(3, 0, 8), PI * 0.85, -0.25)
+			"pausa":
+				Mundo.hora = 8.0
+				_olhar(pos_rancho + Vector3(0.3, 0.0, 5.5), pos_rancho + Vector3(0, 1.3, 1.6))
+				hud.tela_pausa.visible = true
+			"config":
+				hud.tela_config.abrir()
+			"passos":
+				Mundo.hora = 8.0
+				tutorial.reiniciar()
+				jogador.olhou = 1000.0
+				Mundo.rodando = true
+				_olhar(pos_rancho + Vector3(-1.5, 0.0, 6.5), pos_rancho + Vector3(1.0, 0.3, 2.15))
 			"porta":
 				Mundo.hora = 8.0
 				_olhar(pos_rancho + Vector3(0.3, 0.0, 5.5), pos_rancho + Vector3(0, 1.3, 1.6))

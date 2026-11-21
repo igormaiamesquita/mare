@@ -16,6 +16,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 Mundo="*res://scripts/mundo.gd"
 Texturas="*res://scripts/texturas.gd"
+Config="*res://scripts/config.gd"
 
 [display]
 

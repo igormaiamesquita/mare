@@ -87,6 +87,7 @@ func dados() -> Dictionary:
 			"stats": j.stats, "comeu": j.comeu, "lanterna": j.lanterna.light_energy > 0.0,
 		},
 		"missoes": {"etapa": main.missoes.etapa, "concluido": main.missoes.concluido},
+		"tutorial": {"ativo": main.tutorial.ativo, "etapa": main.tutorial.etapa},
 		"fogao_rancho": _fogao(main.fogao),
 		"jiraus": [],
 		"itens_removidos": [],
@@ -190,6 +191,10 @@ func aplicar(d: Dictionary) -> void:
 
 	main.missoes.etapa = int(d["missoes"]["etapa"])
 	main.missoes.concluido = bool(d["missoes"]["concluido"])
+	# jogos salvos de antes dos primeiros passos: já passaram dessa fase
+	var tut: Dictionary = d.get("tutorial", {"ativo": false, "etapa": 0})
+	main.tutorial.ativo = bool(tut["ativo"])
+	main.tutorial.etapa = int(tut["etapa"])
 
 	_por_fogao(main.fogao, d["fogao_rancho"])
 	for jr in d["jiraus"]:

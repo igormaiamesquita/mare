@@ -81,6 +81,8 @@ static func alcance(n: Node, metros: float) -> void:
 		var g := n as GeometryInstance3D
 		if g.visibility_range_end == 0.0:
 			g.visibility_range_end = metros
+			g.set_meta("alcance", metros)
+			g.add_to_group("alcance")
 			g.visibility_range_end_margin = metros * 0.1
 			g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	for c in n.get_children():

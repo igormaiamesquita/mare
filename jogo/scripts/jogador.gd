@@ -7,7 +7,6 @@ const VEL_ANDAR := 3.2
 const VEL_CORRER := 5.8
 const PULO := 4.3
 const GRAVIDADE := 12.0
-const SENS := 0.0022
 const ALTURA_OLHOS := 1.62
 const OLHOS_AGACHADO := 0.78
 const DIST_TOCA := 0.55
@@ -89,6 +88,7 @@ var mg := {}
 var segurando := {}
 var _gastou := false
 var _bob := 0.0
+var olhou := 0.0               # quanto o mouse já girou a câmera (primeiros passos)
 var _tremor := 0.0
 var _aviso_fome := false
 var _aviso_atolado := false
@@ -124,7 +124,7 @@ func _ready() -> void:
 	cabeca.position.y = ALTURA_OLHOS
 	add_child(cabeca)
 	camera = Camera3D.new()
-	camera.fov = 72
+	camera.fov = float(Config.v["fov"])
 	camera.near = 0.03
 	camera.far = 700
 	cabeca.add_child(camera)
@@ -369,12 +369,13 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 	if e is InputEventMouseMotion and estado == Estado.PILOTANDO:
 		var mp := e as InputEventMouseMotion
-		_olhar = clampf(_olhar - mp.relative.x * SENS, -2.2, 2.2)
-		cabeca.rotation.x = clampf(cabeca.rotation.x - mp.relative.y * SENS, -1.2, 1.2)
+		_olhar = clampf(_olhar - mp.relative.x * Config.sens(), -2.2, 2.2)
+		cabeca.rotation.x = clampf(cabeca.rotation.x - mp.relative.y * Config.sens() * _inv_y(), -1.2, 1.2)
 	elif e is InputEventMouseMotion and (estado == Estado.ANDANDO or estado == Estado.SEGURANDO):
 		var mm := e as InputEventMouseMotion
-		rotate_y(-mm.relative.x * SENS)
-		cabeca.rotation.x = clampf(cabeca.rotation.x - mm.relative.y * SENS, -1.45, 1.45)
+		rotate_y(-mm.relative.x * Config.sens())
+		cabeca.rotation.x = clampf(cabeca.rotation.x - mm.relative.y * Config.sens() * _inv_y(), -1.45, 1.45)
+		olhou += mm.relative.length()
 
 
 func _physics_process(delta: float) -> void:
@@ -518,6 +519,10 @@ func _mover(delta: float) -> void:
 	var chao2 := Terreno.altura(global_position.x, global_position.z)
 	if global_position.y < chao2 - 0.5:
 		global_position.y = chao2
+
+
+func _inv_y() -> float:
+	return -1.0 if Config.v["inverter_y"] else 1.0
 
 
 func _procurar_alvo() -> void:
@@ -1137,7 +1142,7 @@ func _visual(delta: float) -> void:
 		_bob += delta * hv * 2.3
 	var alvo_y := (0.95 if agachado else ALTURA_OLHOS) - atolado * 0.5
 	if hv > 0.3 and estado != Estado.TOCA:
-		alvo_y += sin(_bob) * 0.03
+		alvo_y += sin(_bob) * 0.03 * float(Config.v["balanco"])
 	if estado == Estado.TOCA:
 		alvo_y = OLHOS_AGACHADO
 	cabeca.position.y = lerpf(cabeca.position.y, alvo_y, clampf(delta * 8.0, 0.0, 1.0))
