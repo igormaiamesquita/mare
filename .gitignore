@@ -1,0 +1,16 @@
+# Só o jogo e as ferramentas vão para o repositório público.
+/*
+!/.gitignore
+!/README.md
+!/LICENSE
+!/LICENCA-ARTE.md
+!/CONTRIBUINDO.md
+!/jogo/
+!/blender/
+
+# cache do Godot (é refeito ao abrir o projeto)
+jogo/.godot/
+*.import.tmp
+.DS_Store
+*.blend1
+__pycache__/
