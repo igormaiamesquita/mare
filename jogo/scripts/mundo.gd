@@ -205,6 +205,8 @@ func _criar_acoes() -> void:
 		"interagir": [KEY_E], "soltar": [KEY_R], "lanterna": [KEY_F],
 		"balde": [KEY_G], "pausa": [KEY_ESCAPE], "construir": [KEY_B], "tarrafa": [KEY_T], "agachar": [KEY_CTRL, KEY_ALT],
 	}
+	for i in 9:
+		teclas["atalho_%d" % (i + 1)] = [KEY_1 + i]
 	for nome in teclas:
 		if InputMap.has_action(nome):
 			continue

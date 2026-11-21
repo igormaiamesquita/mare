@@ -1140,6 +1140,17 @@ func _debug() -> void:
 		_tirar_fotos.call_deferred(fotos.split(","), saida)
 	if "--medir" in OS.get_cmdline_user_args():
 		_medir.call_deferred()
+	if "--icones" in OS.get_cmdline_user_args():
+		var ic := Node.new()
+		ic.set_script(load("res://scripts/icones.gd"))
+		add_child(ic)
+		var so := []
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--so="):
+				so = Array(arg.substr(5).split(","))
+		await ic.gerar(so)
+		get_tree().quit()
+		return
 	if "--teste-novo-jogo" in OS.get_cmdline_user_args():
 		_teste_novo_jogo.call_deferred()
 	if "--teste" in OS.get_cmdline_user_args():
@@ -1315,7 +1326,11 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 				jogador.tem_balde = true
 				jogador.caranguejos = 5
 				jogador.peixes = 2
-				jogador.mochila = {"peixe": 2, "lenha": 2, "farinha": 1, "farofa": 1}
+				for k in {"peixe": 2, "lenha": 2, "farinha": 1, "farofa": 1}:
+					jogador.mochila[k] = {"peixe": 2, "lenha": 2, "farinha": 1, "farofa": 1}[k]
+				jogador.tem_tarrafa = true
+				jogador.galochas = true
+				jogador.aratus = 1
 				Mundo.rodando = true
 				hud.abrir_inventario(true)
 			"canoa":

@@ -8,7 +8,7 @@ const PASSOS := [
 	"Corte ou junte 2 feixes de lenha",
 	"Acenda um fogo (fogão do rancho ou jirau-fogão)",
 	"Cozinhe os caranguejos",
-	"Pegue farinha no rancho e coma",
+	"Coma o que cozinhou",
 ]
 
 var main
@@ -55,7 +55,7 @@ func detalhe() -> String:
 				return "Cozinhando: %d%%" % int(main.fogao_perto(jogador.global_position).cozimento * 100.0)
 			return "Leve os caranguejos até um fogo aceso"
 		5:
-			return "Farinha: " + ("na cuia" if jogador.farinha else "falta pegar")
+			return "Com farinha d'água na cuia a comida sustenta mais (tem no saco do rancho)." if not jogador.farinha else "Farinha na cuia: vai comer com farinha."
 	return ""
 
 

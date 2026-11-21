@@ -175,13 +175,30 @@ func _rodar() -> void:
 		espera += 1
 		await _quadros(1)
 	print("   cozidos: ", main.fogao.cozidos)
-	print("5) farinha e comer")
-	await _usar(main.item_mais_perto("farinha", j.global_position))
+	print("5) comer sem farinha")
+	if j.farinha:
+		return _falhar("já começou com farinha na cuia")
 	await _usar(main.fogao)
 	await _quadros(10)
 	print("   fome: %.0f  comeu: %s  missão concluída: %s" % [j.fome, j.comeu, main.missoes.concluido])
 	if not main.missoes.concluido:
 		return _falhar("missão não concluída (etapa %d)" % main.missoes.etapa)
+	print("5b) atalhos 1-9 e farinha")
+	main.hud.continuar()      # fecha a tela de missão concluída (ela pausa o mundo)
+	await _quadros(3)
+	j.usar_atalho(2)
+	var acesa: bool = j.lanterna.light_energy > 0.0
+	j.usar_atalho(2)
+	j.usar_atalho(1)
+	var tarrafa_mao: bool = j.na_mao == "tarrafa"
+	j.usar_atalho(0)
+	await _usar(main.item_mais_perto("farinha", j.global_position))
+	var tinha: bool = j.farinha
+	var fome_f: float = j.fome
+	j.usar_atalho(4)
+	print("   lanterna acendeu: %s · tarrafa na mão: %s · facão de volta: %s · farinha: %s -> comeu (fome %.0f -> %.0f)" % [acesa, tarrafa_mao, j.na_mao == "facao", tinha, fome_f, j.fome])
+	if not acesa or j.lanterna.light_energy > 0.0 or not tarrafa_mao or j.na_mao != "facao" or not tinha or j.farinha:
+		return _falhar("atalhos da barra não funcionaram")
 	print("6) jirau-fogão no meio do mangue")
 	main.hud.tela_fim.visible = false
 	Mundo.rodando = true

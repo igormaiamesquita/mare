@@ -1047,6 +1047,64 @@ barco_abandonado()
 bancada()
 bacia()
 
+# ---------------------------------------------------------------- embornal (a "mochila") e lanterna (para ícones e para a mão)
+
+def _arredondar(ob, largura, segs=3):
+    mod = ob.modifiers.new("b", 'BEVEL'); mod.width = largura; mod.segments = segs
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg)); ob.modifiers.clear(); ob.data = me
+    return ob
+
+
+def embornal():
+    """Bolsa de pano de ombro, de quem vai pro mangue: corpo, aba, botão de osso e alça."""
+    random.seed(13)
+    coll = new_coll("embornal")
+    pano = material("pano_embornal", (0.42, 0.34, 0.22), 0.95)
+    aba_m = material("pano_embornal_aba", (0.30, 0.22, 0.14), 0.95)
+    costura = material("costura", (0.80, 0.72, 0.55), 0.9)
+    parts = []
+    corpo = box(coll, (0, 0, 0.17), (0.32, 0.11, 0.32), pano, "corpo")
+    _arredondar(corpo, 0.035)
+    for v in corpo.data.vertices:                       # barriga: fica mais gordo embaixo
+        k = 1 - (v.co.z / 0.34)
+        v.co.y *= 1 + 0.35 * k
+    parts.append(corpo)
+    aba = box(coll, (0, -0.06, 0.27), (0.33, 0.02, 0.17), aba_m, "aba", rot=(0.12, 0, 0))
+    _arredondar(aba, 0.02)
+    parts.append(aba)
+    parts.append(sphere(coll, (0, -0.085, 0.2), (0.018, 0.012, 0.018), costura, "botao", seg=10, rings=6))
+    # costura em volta da aba
+    parts.append(tube(coll, [(-0.15, -0.075, 0.195), (0.15, -0.075, 0.195)], [0.004, 0.004], costura, "costura", caps=False))
+    # alça: arco largo por cima
+    pts = bezier_pts((-0.15, 0, 0.32), (0, 0, 0.95), (0.15, 0, 0.32), 16)
+    parts.append(tube(coll, [tuple(p) for p in pts], [0.018] * len(pts), aba_m, "alca", sides=1))
+    export(join(parts, "embornal"), "embornal.glb")
+
+embornal()
+
+
+def lanterna():
+    """Lanterna de mão de pilha: corpo emborrachado, cabeça mais larga, vidro e botão. Frente = +Y."""
+    coll = new_coll("lanterna")
+    corpo_m = material("lanterna_corpo", (0.62, 0.12, 0.08), 0.5)
+    preto = material("lanterna_preto", (0.04, 0.04, 0.045), 0.6)
+    vidro = material("lanterna_vidro", (1.0, 0.93, 0.7), 0.1)
+    parts = []
+    c = cylinder(coll, (0, 0, 0), 0.021, 0.021, 0.15, corpo_m, "corpo", seg=20)
+    cab = cylinder(coll, (0, 0, 0.15), 0.022, 0.034, 0.05, preto, "cabeca", seg=20)
+    lente = cylinder(coll, (0, 0, 0.2), 0.031, 0.031, 0.004, vidro, "lente", seg=20)
+    fundo = cylinder(coll, (0, 0, -0.012), 0.019, 0.021, 0.012, preto, "tampa", seg=20)
+    botao = box(coll, (0, -0.022, 0.1), (0.012, 0.01, 0.022), preto, "botao")
+    parts = [c, cab, lente, fundo, botao]
+    for i in range(5):
+        parts.append(cylinder(coll, (0, 0, 0.02 + i * 0.022), 0.0215, 0.0215, 0.006, preto, "anel", seg=20))
+    ob = join(parts, "lanterna")
+    ob.data.transform(Matrix.Rotation(math.radians(-90), 4, 'X'))   # deita: a luz aponta para +Y
+    export(ob, "lanterna.glb")
+
+lanterna()
+
 
 # ---------------------------------------------------------------- homenagem ao mangue geral: parabólica e palafita
 

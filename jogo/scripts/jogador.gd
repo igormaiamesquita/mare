@@ -89,6 +89,11 @@ var segurando := {}
 var _gastou := false
 var _bob := 0.0
 var luz_perto: OmniLight3D
+## Atalhos 1–9 da barra de baixo ("" = livre, para coisas futuras).
+const ATALHOS := ["facao", "tarrafa", "lanterna", "farofa", "farinha", "", "", "", ""]
+var na_mao := "facao"          # o que está na mão direita: "facao" ou "tarrafa"
+var tarrafa_vis: Node3D
+var _botao_tarrafa := false
 const LANTERNA := 6.0
 var olhou := 0.0               # quanto o mouse já girou a câmera (primeiros passos)
 var _tremor := 0.0
@@ -175,6 +180,12 @@ func _ready() -> void:
 	camera.add_child(facao)
 	facao.position = FACAO_BASE
 	facao.rotation_degrees = Vector3(35, -12, -20)
+	tarrafa_vis = _modelo("tarrafa")
+	camera.add_child(tarrafa_vis)
+	tarrafa_vis.position = FACAO_BASE + Vector3(0.02, 0.06, 0.04)
+	tarrafa_vis.scale = Vector3.ONE * 0.42
+	tarrafa_vis.rotation_degrees = Vector3(10, -20, -8)
+	tarrafa_vis.visible = false
 
 	mao_crab = _modelo("caranguejo")
 	camera.add_child(mao_crab)
@@ -554,7 +565,55 @@ func _procurar_alvo() -> void:
 	texto_alvo = alvo.texto_interacao(self) if alvo != null else ""
 
 
+## Tem o item do atalho? (para a barra mostrar apagado o que falta)
+func tem_atalho(nome: String) -> bool:
+	match nome:
+		"facao", "lanterna":
+			return true
+		"tarrafa":
+			return tem_tarrafa
+		"farofa":
+			return mochila["farofa"] > 0
+		"farinha":
+			return farinha
+	return false
+
+
+func usar_atalho(i: int) -> void:
+	var nome: String = ATALHOS[i]
+	match nome:
+		"facao":
+			na_mao = "facao"
+		"tarrafa":
+			if tem_tarrafa:
+				na_mao = "tarrafa"
+				Mundo.avisar("Tarrafa na mão: SEGURE o botão do mouse para mirar e SOLTE para jogar.")
+			else:
+				Mundo.avisar("Você não tem tarrafa. Tem uma no rancho.")
+		"lanterna":
+			lanterna.light_energy = 0.0 if lanterna.light_energy > 0.0 else LANTERNA
+		"farofa":
+			if not comer_farofa():
+				Mundo.avisar("Acabou a farofa.")
+		"farinha":
+			if not comer_farinha():
+				Mundo.avisar("A cuia está vazia. Tem farinha no saco do rancho.")
+
+
+## Um punhado de farinha pura: engana um pouco a fome.
+func comer_farinha() -> bool:
+	if not farinha:
+		return false
+	farinha = false
+	fome = minf(100.0, fome + 10.0)
+	Mundo.avisar("Comeu um punhado de farinha d'água.")
+	return true
+
+
 func _teclas() -> void:
+	for i in 9:
+		if Input.is_action_just_pressed("atalho_%d" % (i + 1)):
+			usar_atalho(i)
 	if Input.is_action_just_pressed("lanterna"):
 		lanterna.light_energy = 0.0 if lanterna.light_energy > 0.0 else LANTERNA
 	if Input.is_action_just_pressed("balde") and tem_balde:
@@ -666,11 +725,17 @@ func passar_lama_no_rosto() -> bool:
 	return true
 
 
-func comer(n: int) -> void:
-	fome = minf(100.0, fome + n * 12.0)
-	estamina = 100.0
+## Comer o que cozinhou. Com farinha sustenta mais, enche a força e dá saúde; sem farinha também alimenta.
+func comer(n: int, com_farinha: bool) -> void:
+	if com_farinha:
+		fome = minf(100.0, fome + n * 12.0)
+		estamina = estamina_max
+		saude = minf(100.0, saude + 10.0)
+		farinha = false
+	else:
+		fome = minf(100.0, fome + n * 8.0)
+		estamina = minf(estamina_max, estamina + 40.0)
 	comeu = true
-	farinha = false
 
 
 # ------------------------------------------------------------------ tarrafa (T)
@@ -679,13 +744,17 @@ func _tarrafa() -> void:
 	var delta := get_physics_process_delta_time()
 	if tem_tarrafa and not _aviso_cardume and main.peixes.cardume_perto(global_position, 12.0):
 		_aviso_cardume = true
-		Mundo.avisar("Cardume perto! SEGURE T para mirar a tarrafa e SOLTE para jogar.")
+		Mundo.avisar("Cardume perto! Tarrafa na mão (2), SEGURE o botão do mouse (ou T) para mirar e SOLTE para jogar.")
+	var mouse: bool = na_mao == "tarrafa" and estado == Estado.ANDANDO and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	_botao_tarrafa = Input.is_action_pressed("tarrafa") or mouse
+	if Input.is_action_just_pressed("tarrafa") and tem_tarrafa:
+		na_mao = "tarrafa"
 	if Input.is_action_just_pressed("tarrafa") and not tem_tarrafa:
 		Mundo.avisar("Você não tem tarrafa. Tem uma pendurada no rancho.")
 		return
 	if not tem_tarrafa:
 		return
-	if Input.is_action_pressed("tarrafa") and not nadando and atolado < 0.2:
+	if _botao_tarrafa and not nadando and atolado < 0.2:
 		if _mira < 0.0:
 			_mira = 0.0
 		_mira = minf(1.0, _mira + delta * 0.9)
@@ -707,7 +776,7 @@ func _tarrafa() -> void:
 			main.add_child(_mira_vis)
 		_mira_vis.visible = true
 		_mira_vis.global_position = _mira_alvo
-		texto_alvo = "Mirando a tarrafa: %.0f m   ·   SOLTE T para jogar" % lerpf(3.0, 9.0, _mira)
+		texto_alvo = "Mirando a tarrafa: %.0f m   ·   SOLTE para jogar" % lerpf(3.0, 9.0, _mira)
 	elif _mira >= 0.0:
 		_mira = -1.0
 		if _mira_vis != null:
@@ -843,6 +912,7 @@ func _construir_jirau() -> void:
 
 
 func golpear() -> void:
+	na_mao = "facao"
 	_golpe = 0.8
 	_tremor = 0.08
 
@@ -1172,7 +1242,8 @@ func _visual(delta: float) -> void:
 		var balanco := Vector3(sin(_bob * 0.5) * 0.01, absf(cos(_bob * 0.5)) * 0.012, 0)
 		braco.position = braco.position.lerp(BRACO_BASE + balanco, clampf(delta * 10.0, 0.0, 1.0))
 	braco.visible = estado == Estado.TOCA
-	facao.visible = estado == Estado.ANDANDO
+	facao.visible = estado == Estado.ANDANDO and na_mao == "facao"
+	tarrafa_vis.visible = estado == Estado.ANDANDO and na_mao == "tarrafa" and _mira < 0.0
 	if _golpe > 0.0:
 		_golpe = maxf(0.0, _golpe - delta)
 		var g := sin(_golpe * 12.0)

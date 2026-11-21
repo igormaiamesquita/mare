@@ -71,7 +71,7 @@ func dica() -> String:
 		"balde":
 			return "Entre pela porta. Olhe para o balde e aperte %s.\nÉ no balde que vão os caranguejos (até 10)." % E
 		"tarrafa":
-			return "A tarrafa fica no fundo do rancho. Olhe para ela e aperte %s.\nPerto de um cardume na água: SEGURE %s para mirar e SOLTE para jogar." % [E, tecla("T")]
+			return "A tarrafa fica no fundo do rancho. Olhe para ela e aperte %s.\nDepois, perto de um cardume: tecla %s põe a tarrafa na mão, SEGURE o %s para mirar e SOLTE para jogar." % [E, tecla("2"), tecla("botão do mouse")]
 		"inventario":
 			return "Aperte %s para ver a mochila e o balde. Aperte %s de novo para fechar." % [tecla("I"), tecla("I")]
 		"lenha":

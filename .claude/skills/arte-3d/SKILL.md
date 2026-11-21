@@ -18,6 +18,11 @@ blender/importar_externos.py  → ajusta os de terceiros ───────�
 - O jogo carrega pelo nome (`res://assets/<nome>.glb`). Trocar um modelo mantendo o nome não exige mudar código.
 - Depois de exportar, rode a importação e tire as fotos (skill `rodar-e-testar`).
 
+## Ícones da interface
+
+Os ícones (`jogo/assets/icones/*.png`) são **fotos dos próprios modelos**, feitas por `jogo/scripts/icones.gd`. Mudou um modelo ou criou um item? Acrescente na lista `ITENS` (modelo, rotação, giro na tela) e gere de novo:
+`timeout 400 "$G" --path jogo -- --icones` (ou `--icones --so=facao,remo` para só alguns), depois `--headless --import`. Precisa de janela (não use `--headless`). Para conferir todos de uma vez, monte uma folha de contato com Pillow (`uv run --with pillow`).
+
 ## Convenções (o código depende delas)
 
 - Metros, **Z para cima**, a **frente aponta para +Y**. O exportador glTF converte para o padrão do Godot.

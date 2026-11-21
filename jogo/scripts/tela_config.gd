@@ -65,6 +65,7 @@ func _ready() -> void:
 	teclas.text = ("W A S D  andar   ·   SHIFT  correr   ·   ESPAÇO  pular / puxar a perna da lama / subir em borda alta\n" +
 		"CTRL ou OPTION  agachar   ·   E  usar, pegar, cortar   ·   R  soltar o caranguejo   ·   G  largar o balde\n" +
 		"I ou TAB  inventário   ·   M  mapa   ·   T  tarrafa (segure e solte)   ·   B  jirau-fogão   ·   F  lanterna   ·   ESC  pausa\n" +
+		"1 a 9  atalhos da barra: 1 facão · 2 tarrafa (mouse segura e solta) · 3 lanterna · 4 farofa · 5 farinha\n" +
 		"Na toca:  SEGURE E  enfiar o braço   ·   ESPAÇO  agarrar   ·   SEGURE E  puxar e SOLTE no \"SOLTE!\"   ·   S  tirar o braço")
 	teclas.add_theme_font_size_override("font_size", 16)
 	teclas.add_theme_color_override("font_color", APAGADO)

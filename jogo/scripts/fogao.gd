@@ -1,5 +1,5 @@
 extends Node3D
-## Fogão de 3 pedras com panela: pôr lenha → acender → pôr os caranguejos → esperar → comer com farinha.
+## Fogão de 3 pedras com panela: pôr lenha → acender → pôr os caranguejos → esperar → comer (com farinha, melhor).
 
 const SEGUNDOS_PARA_COZINHAR := 40.0
 const HORAS_POR_FEIXE := 2.5
@@ -72,7 +72,7 @@ func texto_interacao(j) -> String:
 	if cozidos + peixe_cozido > 0:
 		if j.farinha:
 			return "[E] Comer %s com farinha" % _texto_comida(cozidos, peixe_cozido)
-		return "Caranguejo pronto! Falta farinha: pegue no saco dentro do rancho"
+		return "[E] Comer %s (com farinha d'água sustenta mais)" % _texto_comida(cozidos, peixe_cozido)
 	if na_panela + peixe_panela > 0:
 		return "Cozinhando %s... %d%%" % [_texto_comida(na_panela, peixe_panela), int(cozimento * 100.0)]
 	if not aceso:
@@ -91,9 +91,13 @@ func texto_interacao(j) -> String:
 
 
 func interagir(j) -> void:
-	if cozidos + peixe_cozido > 0 and j.farinha:
-		j.comer(cozidos + peixe_cozido)
-		Mundo.avisar("Comeu %s com farinha. Energia para o resto do dia!" % _texto_comida(cozidos, peixe_cozido), "objetivo")
+	if cozidos + peixe_cozido > 0:
+		var com_farinha: bool = j.farinha
+		j.comer(cozidos + peixe_cozido, com_farinha)
+		if com_farinha:
+			Mundo.avisar("Comeu %s com farinha. Energia para o resto do dia!" % _texto_comida(cozidos, peixe_cozido), "objetivo")
+		else:
+			Mundo.avisar("Comeu %s. Com farinha d'água teria sustentado mais." % _texto_comida(cozidos, peixe_cozido), "objetivo")
 		cozidos = 0
 		peixe_cozido = 0
 		return

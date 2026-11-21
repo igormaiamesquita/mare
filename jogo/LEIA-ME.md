@@ -26,6 +26,7 @@ godot --path jogo
 | ESPAÇO perto de borda alta | agarra e sobe (trapiche, assoalho), inclusive saindo da água |
 | I (ou TAB) | inventário: mochila (6 espaços) e balde (10); clique no peixe para passar entre os dois, clique na farofa para comer |
 | T | tarrafa: segure para mirar, solte para jogar em cima do cardume |
+| 1 a 9 | atalhos da barra: 1 facão · 2 tarrafa na mão (aí o botão do mouse segura e solta) · 3 lanterna · 4 farofa · 5 farinha |
 | B | construir jirau-fogão (aparece verde onde dá, vermelho onde não dá; E constrói) |
 | ESC | pausa |
 | **Na toca** | **segure E** para enfiar o braço · quando achar o caranguejo, **ESPAÇO** para agarrar (centro do verde = pegada **forte**, borda = fraca, vermelho = pinçada) · **segure E** para puxar e **solte** quando aparecer "SOLTE!" · com pegada forte ele nunca escapa · **S** tira o braço |
@@ -47,7 +48,7 @@ godot --path jogo
 - **Caranguejo com cérebro:** os que andam na lama fogem para a toca quando você chega perto, e os vizinhos fogem junto. Encurralado longe da toca, ele levanta as pinças e ameaça (pegar nessa hora pode dar beliscão). Na toca, se você errar muito ou segurar fraco, ele pode escapar por uma toca vizinha e sair correndo.
 - **Balde** com capacidade de 10. Se você largar o balde e a maré chegar, os caranguejos fogem.
 - **Facão** na mão: corta lenha dos troncos caídos. A lenha vai para a **mochila** (até 4).
-- **Fogão de 3 pedras:** lenha → isqueiro → panela (os caranguejos aparecem lá dentro e ficam vermelhos quando cozinham) → comer com farinha.
+- **Fogão de 3 pedras:** lenha → isqueiro → panela (os caranguejos aparecem lá dentro e ficam vermelhos quando cozinham) → comer (com farinha d'água sustenta mais e dá saúde; sem farinha também alimenta).
 - **Jirau-fogão** (B): fogão suspenso de pau, talo e lama, montado em qualquer lugar do mangue com 2 feixes de lenha, por etapas (pés → talos → lama). Funciona igual ao fogão do rancho, com a panelinha da mochila. Fica a 85 cm do chão; se a maré passar disso, apaga o fogo.
 - **Mochila e balde:** a mochila tem 6 espaços (3 peixes, 2 feixes de lenha, 1 cuia de farinha ou 2 farofas por espaço). Caranguejo só no balde. Você começa com farofa para comer em qualquer lugar.
 - **Saúde e perigos:** barra de saúde separada da força. Arraia enterrada na água rasa ferroa quem corre (ande sem correr); muriçoca no amanhecer, entardecer e noite (lama no rosto pelo inventário, ou fumaça do fogo); bagre das poças tem esporão; pinçada tira saúde. Sem força na água funda você engole água e perde saúde aos poucos; parado, você boia e descansa (se não estiver pesado).

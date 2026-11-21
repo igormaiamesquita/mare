@@ -18,10 +18,8 @@ var barra_fome: ProgressBar
 var barra_forca: ProgressBar
 var barra_saude: ProgressBar
 var muricocas: Muricocas
-var btn_lama: Button
 var lbl_estado: Label
-var barra_itens: HBoxContainer
-var itens := {}
+var barra: Control
 var minimapa: Mapa
 var mapa_grande: Control
 var mapa_vista: Mapa
@@ -51,19 +49,14 @@ var iniciado := false
 var _mapa_aberto := false
 var _inv_aberto := false
 var inventario: Control
-var grade_mochila: GridContainer
-var grade_balde: GridContainer
-var lbl_mochila: Label
-var lbl_balde: Label
-var lbl_info_inv: Label
 
 const DESCRICAO := {
 	"peixe": "Peixe. Cabe no balde ou na mochila (3 por espaço). Clique para passar para o outro lado.",
 	"caranguejo": "Caranguejo-uçá. Só vai no balde: na mochila ele foge e belisca.",
 	"aratu": "Aratu: caranguejo pequeno que sobe nas raízes na maré cheia. Vai no balde; cozinha junto.",
 	"lenha": "Feixe de lenha seca (2 por espaço). Para o fogão e o jirau.",
-	"farinha": "Cuia de farinha d'água. Para comer com o caranguejo cozido.",
-	"farofa": "Farofa (2 por espaço). Clique para comer: engana a fome em qualquer lugar.",
+	"farinha": "Cuia de farinha d'água (atalho 5). Com caranguejo ou peixe cozido, a comida sustenta mais e dá saúde. Pura, engana um pouco a fome.",
+	"farofa": "Farofa (2 por espaço, atalho 4). Engana a fome em qualquer lugar.",
 	"helice": "Hélice do motor de rabeta. Leve até a canoa.",
 	"remo": "Remo. Serve quando a gasolina acaba.",
 	"cuia": "Cuia para tirar a água que entra na canoa.",
@@ -71,7 +64,7 @@ const DESCRICAO := {
 	"breu": "Lata de breu e estopa: tapa o furo do casco.",
 	"motor": "Motor de rabeta (ocupa 3 espaços). Precisa ser lavado com água doce antes de instalar.",
 }
-const NOME_ITEM := {"peixe": "Peixe", "caranguejo": "Caranguejo", "aratu": "Aratu", "lenha": "Lenha", "farinha": "Farinha", "farofa": "Farofa",
+const NOME_ITEM := {"peixe": "Peixe", "caranguejo": "Caranguejo-uçá", "aratu": "Aratu", "lenha": "Lenha", "farinha": "Farinha d'água", "farofa": "Farofa",
 	"helice": "Hélice", "remo": "Remo", "cuia": "Cuia", "galao": "Galão", "breu": "Breu", "motor": "Motor"}
 const COR_ITEM := {"peixe": Color(0.6, 0.75, 0.85), "caranguejo": Color(0.85, 0.5, 0.4), "aratu": Color(0.95, 0.4, 0.3), "lenha": Color(0.75, 0.6, 0.4), "farinha": Color(0.95, 0.9, 0.7), "farofa": Color(0.9, 0.75, 0.45),
 	"helice": Color(0.45, 0.85, 1.0), "remo": Color(0.45, 0.85, 1.0), "cuia": Color(0.45, 0.85, 1.0), "galao": Color(0.45, 0.85, 1.0), "breu": Color(0.45, 0.85, 1.0), "motor": Color(0.45, 0.85, 1.0)}
@@ -167,29 +160,11 @@ func _ready() -> void:
 	lbl_estado = _label("", 18, Color(1, 0.6, 0.5))
 	baixo.add_child(lbl_estado)
 
-	# ---- ferramentas (canto inferior direito)
-	barra_itens = HBoxContainer.new()
-	barra_itens.add_theme_constant_override("separation", 8)
-	barra_itens.anchor_left = 1.0
-	barra_itens.anchor_right = 1.0
-	barra_itens.anchor_top = 1.0
-	barra_itens.anchor_bottom = 1.0
-	barra_itens.offset_left = -900
-	barra_itens.offset_right = -28
-	barra_itens.offset_top = -90
-	barra_itens.offset_bottom = -24
-	barra_itens.alignment = BoxContainer.ALIGNMENT_END
-	barra_itens.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	raiz.add_child(barra_itens)
-	for nome in ["balde", "mochila", "facao", "tarrafa", "galochas", "panela", "lanterna"]:
-		var p := _painel()
-		p.custom_minimum_size = Vector2(98, 62)
-		var l := _label("", 17)
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		p.add_child(l)
-		barra_itens.add_child(p)
-		itens[nome] = l
+	# ---- atalhos 1–9 e o que se carrega (barra.gd)
+	barra = Control.new()
+	barra.set_script(load("res://scripts/barra.gd"))
+	barra.jogador = jogador
+	raiz.add_child(barra)
 
 	# ---- mira, texto de interação
 	var mira := _label("·", 34, Color(1, 1, 1, 0.85))
@@ -650,160 +625,20 @@ func tela_final() -> void:
 
 func _criar_inventario() -> void:
 	inventario = ColorRect.new()
-	(inventario as ColorRect).color = Color(0.03, 0.03, 0.025, 0.85)
-	inventario.set_anchors_preset(Control.PRESET_FULL_RECT)
-	inventario.mouse_filter = Control.MOUSE_FILTER_STOP
-	inventario.visible = false
+	inventario.set_script(load("res://scripts/inventario.gd"))
+	inventario.hud = self
+	inventario.jogador = jogador
 	raiz.add_child(inventario)
-	var centro := CenterContainer.new()
-	centro.set_anchors_preset(Control.PRESET_FULL_RECT)
-	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inventario.add_child(centro)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 18)
-	centro.add_child(v)
-	var titulo := _label("INVENTÁRIO", 40, DOURADO)
-	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(titulo)
-	var lado := HBoxContainer.new()
-	lado.add_theme_constant_override("separation", 60)
-	v.add_child(lado)
-	var col_m := VBoxContainer.new()
-	lado.add_child(col_m)
-	lbl_mochila = _label("MOCHILA", 22)
-	col_m.add_child(lbl_mochila)
-	grade_mochila = GridContainer.new()
-	grade_mochila.columns = 3
-	grade_mochila.add_theme_constant_override("h_separation", 10)
-	grade_mochila.add_theme_constant_override("v_separation", 10)
-	col_m.add_child(grade_mochila)
-	var col_b := VBoxContainer.new()
-	lado.add_child(col_b)
-	lbl_balde = _label("BALDE", 22)
-	col_b.add_child(lbl_balde)
-	grade_balde = GridContainer.new()
-	grade_balde.columns = 5
-	grade_balde.add_theme_constant_override("h_separation", 8)
-	grade_balde.add_theme_constant_override("v_separation", 8)
-	col_b.add_child(grade_balde)
-	var ferr := _label("Ferramentas:  facão  ·  panelinha  ·  isqueiro  ·  lanterna", 19, Color(0.85, 0.85, 0.8))
-	ferr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(ferr)
-	btn_lama = Button.new()
-	btn_lama.text = "Passar lama no rosto (espanta muriçoca)"
-	btn_lama.focus_mode = Control.FOCUS_NONE
-	btn_lama.add_theme_font_size_override("font_size", 18)
-	btn_lama.custom_minimum_size = Vector2(420, 44)
-	btn_lama.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	btn_lama.pressed.connect(func() -> void:
-		if jogador.passar_lama_no_rosto():
-			lbl_info_inv.text = "Lama no rosto: protegido da muriçoca por umas 3 horas."
-		else:
-			lbl_info_inv.text = "Precisa estar pisando na lama para passar no rosto.")
-	v.add_child(btn_lama)
-	lbl_info_inv = _label("", 20, Color(1, 0.9, 0.7))
-	lbl_info_inv.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_info_inv.custom_minimum_size = Vector2(900, 56)
-	lbl_info_inv.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(lbl_info_inv)
-	var rodape := _label("Clique no peixe para passar entre balde e mochila  ·  clique na farofa para comer  ·  I fecha", 18, Color(1, 1, 1, 0.7))
-	rodape.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(rodape)
 
 
 func abrir_inventario(sim: bool) -> void:
 	_inv_aberto = sim
-	inventario.visible = sim
 	Mundo.rodando = not sim
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if sim else Input.MOUSE_MODE_CAPTURED
 	if sim:
-		lbl_info_inv.text = "Passe o mouse num item para ver o que é."
-		_montar_inventario()
-
-
-func _montar_inventario() -> void:
-	for c in grade_mochila.get_children():
-		c.queue_free()
-	for c in grade_balde.get_children():
-		c.queue_free()
-	# mochila: cada pilha ocupa um espaço
-	var usados := 0
-	for item in ["peixe", "lenha", "farinha", "farofa", "helice", "remo", "cuia", "galao", "breu", "motor"]:
-		var n: int = jogador.mochila[item]
-		var pilha: int = jogador.PILHA[item]
-		var tam: int = jogador.TAMANHO.get(item, 1)
-		while n > 0:
-			var q := mini(n, pilha)
-			for k in tam:
-				var sl := _slot(item, q, "mochila", Vector2(140, 100))
-				if item == "motor":
-					sl.text = ("Motor limpo" if jogador.motor_limpo else "Motor (sujo)") if k == 0 else "(motor)"
-				grade_mochila.add_child(sl)
-				usados += 1
-			n -= q
-	for i in jogador.MOCHILA_ESPACOS - usados:
-		grade_mochila.add_child(_slot("", 0, "mochila", Vector2(140, 100)))
-	lbl_mochila.text = "MOCHILA   %d/%d espaços" % [jogador.espacos_usados(), jogador.MOCHILA_ESPACOS]
-	# balde: um lugar por bicho
-	if jogador.tem_balde:
-		for i in jogador.caranguejos:
-			grade_balde.add_child(_slot("caranguejo", 1, "balde", Vector2(84, 84)))
-		for i in jogador.peixes:
-			grade_balde.add_child(_slot("peixe", 1, "balde", Vector2(84, 84)))
-		for i in jogador.aratus:
-			grade_balde.add_child(_slot("aratu", 1, "balde", Vector2(84, 84)))
-		for i in jogador.capacidade_balde - jogador.caranguejos - jogador.peixes - jogador.aratus:
-			grade_balde.add_child(_slot("", 0, "balde", Vector2(84, 84)))
-		lbl_balde.text = "BALDE   %d/%d" % [jogador.caranguejos + jogador.peixes + jogador.aratus, jogador.capacidade_balde]
+		inventario.abrir()
 	else:
-		lbl_balde.text = "BALDE   (você não está com ele)"
-
-
-func _slot(item: String, qtd: int, onde: String, tam: Vector2) -> Button:
-	var b := Button.new()
-	b.custom_minimum_size = tam
-	b.focus_mode = Control.FOCUS_NONE
-	var s := StyleBoxFlat.new()
-	s.bg_color = Color(0.1, 0.09, 0.07, 0.95) if item == "" else Color(0.16, 0.14, 0.1, 0.95)
-	s.set_corner_radius_all(6)
-	s.border_color = Color(1, 0.8, 0.42, 0.25) if item == "" else COR_ITEM[item]
-	s.set_border_width_all(2)
-	var s2 := s.duplicate() as StyleBoxFlat
-	s2.bg_color = Color(0.25, 0.21, 0.14, 0.95)
-	b.add_theme_stylebox_override("normal", s)
-	b.add_theme_stylebox_override("hover", s2)
-	b.add_theme_stylebox_override("pressed", s2)
-	b.add_theme_font_size_override("font_size", 18 if tam.x > 100 else 14)
-	if item != "":
-		b.text = NOME_ITEM[item] + ("\n× %d" % qtd if qtd > 1 else "")
-		b.add_theme_color_override("font_color", COR_ITEM[item])
-		b.mouse_entered.connect(func() -> void: lbl_info_inv.text = DESCRICAO[item])
-		b.pressed.connect(_clique_slot.bind(item, onde))
-	return b
-
-
-func _clique_slot(item: String, onde: String) -> void:
-	match [item, onde]:
-		["peixe", "balde"]:
-			if not jogador.peixe_para_mochila():
-				lbl_info_inv.text = "Não cabe mais peixe na mochila."
-			else:
-				lbl_info_inv.text = "Um peixe passou do balde para a mochila."
-		["peixe", "mochila"]:
-			if not jogador.tem_balde:
-				lbl_info_inv.text = "Você não está com o balde."
-			elif not jogador.peixe_para_balde():
-				lbl_info_inv.text = "O balde está cheio."
-			else:
-				lbl_info_inv.text = "Um peixe passou da mochila para o balde."
-		["farofa", _]:
-			jogador.comer_farofa()
-			lbl_info_inv.text = "Comeu farofa. Fome: %d" % int(jogador.fome)
-		["caranguejo", _], ["aratu", _]:
-			lbl_info_inv.text = DESCRICAO["caranguejo"]
-		_:
-			lbl_info_inv.text = DESCRICAO.get(item, "")
-	_montar_inventario()
+		inventario.visible = false
 
 
 # ------------------------------------------------------------------ chamadas do jogador
@@ -896,16 +731,6 @@ func _process(_delta: float) -> void:
 	if jogador.muricoca > 0.05:
 		muricocas.queue_redraw()
 	barra_forca.value = jogador.estamina
-	var no_balde := "%d car." % (jogador.caranguejos + jogador.aratus)
-	if jogador.peixes > 0:
-		no_balde += " %d px" % jogador.peixes
-	_item("balde", "Balde\n" + no_balde if jogador.tem_balde else "Balde\n—", jogador.tem_balde)
-	_item("facao", "Facão", true)
-	_item("mochila", "Mochila  I\n%d/%d" % [jogador.espacos_usados(), jogador.MOCHILA_ESPACOS], true)
-	_item("tarrafa", "Tarrafa  T" if jogador.tem_tarrafa else "Tarrafa\n(no rancho)", jogador.tem_tarrafa)
-	_item("galochas", "Galochas\ncalçadas" if jogador.galochas else "Galochas\n(no rancho)", jogador.galochas)
-	_item("panela", "Panelinha", true)
-	_item("lanterna", "Lanterna F\n" + ("ligada" if jogador.lanterna.light_energy > 0.0 else "desligada"), jogador.lanterna.light_energy > 0.0)
 	lbl_estado.text = ""
 	if jogador.pilotando():
 		var c = jogador.canoa
@@ -987,12 +812,6 @@ func _ajuda_toca() -> String:
 			lbl_ajuda.add_theme_color_override("font_color", DOURADO)
 			return "SEGURE  E  para puxar     ·     pegada %s" % ["", "FRACA", "MÉDIA", "FORTE"][mg["pegada"]]
 	return ""
-
-
-func _item(nome: String, texto: String, ativo: bool) -> void:
-	var l: Label = itens[nome]
-	l.text = texto
-	l.modulate.a = 1.0 if ativo else 0.45
 
 
 func _texto_mare() -> String:
