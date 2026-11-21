@@ -1,0 +1,27 @@
+name: Problema no jogo
+description: Algo quebrou, travou ou não fez o que devia.
+labels: ["problema"]
+body:
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que aconteceu?
+      description: Conte do jeito que der. Uma foto da tela ajuda muito (arraste a imagem aqui).
+    validations:
+      required: true
+  - type: textarea
+    id: como
+    attributes:
+      label: Como chegar nisso?
+      description: O que você estava fazendo antes (onde estava, que horas do jogo, maré alta ou baixa...).
+  - type: input
+    id: sistema
+    attributes:
+      label: Computador
+      description: Sistema (Windows, Mac, Linux) e, se souber, a placa de vídeo.
+  - type: textarea
+    id: log
+    attributes:
+      label: Mensagens do Godot (se tiver)
+      description: Se rodou pelo terminal, cole aqui as linhas com ERROR.
+      render: text

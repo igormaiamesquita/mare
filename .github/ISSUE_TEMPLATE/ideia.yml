@@ -1,0 +1,25 @@
+name: Ideia ou sugestão
+description: Uma coisa nova para o jogo, ou um jeito melhor de fazer algo que já existe.
+labels: ["ideia"]
+body:
+  - type: textarea
+    id: ideia
+    attributes:
+      label: Qual é a ideia?
+    validations:
+      required: true
+  - type: textarea
+    id: mangue
+    attributes:
+      label: Tem a ver com algo do mangue de verdade?
+      description: Se é um costume, um bicho, uma ferramenta ou um jeito de pescar, conte como é (referências e fotos ajudam).
+  - type: dropdown
+    id: ajudar
+    attributes:
+      label: Quer ajudar a fazer?
+      options:
+        - Só a ideia mesmo
+        - Posso ajudar com código
+        - Posso ajudar com arte 3D ou textura
+        - Posso ajudar com som
+        - Posso ajudar com pesquisa

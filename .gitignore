@@ -7,6 +7,8 @@
 !/CONTRIBUINDO.md
 !/jogo/
 !/blender/
+!/docs/
+!/.github/
 # skills do Claude Code do projeto (configurações locais ficam de fora)
 !/.claude/
 /.claude/*

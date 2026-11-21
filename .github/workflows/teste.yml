@@ -1,0 +1,45 @@
+# Roda as checagens do jogo em todo push e pull request: importa, procura erro de script
+# e joga as missões sozinho (jogo/scripts/teste.gd). Tem que terminar com "TESTE OK".
+name: Teste do jogo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GODOT_VERSAO: 4.7.2-stable
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar o Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSAO}/Godot_v${GODOT_VERSAO}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSAO}_linux.x86_64" godot
+          ./godot --version
+
+      - name: Importar
+        run: timeout 600 ./godot --headless --path jogo --import || true
+
+      - name: Erros de script
+        run: |
+          timeout 300 ./godot --headless --path jogo --quit-after 60 > abrir.log 2>&1 || true
+          cat abrir.log
+          if grep -qE "SCRIPT ERROR|Parse Error" abrir.log; then echo "::error::Erro de script ao abrir o jogo"; exit 1; fi
+
+      - name: Teste das missões
+        run: |
+          timeout 900 ./godot --headless --path jogo -- --teste > teste.log 2>&1 || true
+          cat teste.log
+          grep -q "^TESTE OK" teste.log
+
+      - name: Teste do novo jogo
+        run: |
+          timeout 300 ./godot --headless --path jogo -- --teste-novo-jogo > novo.log 2>&1 || true
+          cat novo.log
+          grep -q "NOVO JOGO: .* -> OK" novo.log

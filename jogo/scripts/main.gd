@@ -1221,6 +1221,10 @@ func _olhar(de: Vector3, alvo: Vector3) -> void:
 func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 	hud.tela_inicio.visible = false
 	hud.iniciado = true
+	tutorial.pular()      # só a foto "passos" mostra os primeiros passos
+	DisplayServer.window_set_size(Vector2i(1600, 900))
+	if "--sem-hud" in OS.get_cmdline_user_args():
+		hud.visible = false
 	await get_tree().create_timer(1.0).timeout
 	for nome in lista:
 		if hud._mapa_aberto:
@@ -1230,6 +1234,7 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 		hud.tela_pausa.visible = false
 		hud.tela_config.visible = false
 		hud.tela_sono.visible = false
+		hud.tela_fim.visible = false
 		if not nome.begins_with("inicio"):
 			hud.tela_inicio.visible = false
 		if nome != "segurando":
