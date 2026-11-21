@@ -7,6 +7,10 @@
 !/CONTRIBUINDO.md
 !/jogo/
 !/blender/
+# skills do Claude Code do projeto (configurações locais ficam de fora)
+!/.claude/
+/.claude/*
+!/.claude/skills/
 
 # cache do Godot (é refeito ao abrir o projeto)
 jogo/.godot/

@@ -17,11 +17,11 @@ func montar() -> void:
 	_decoracao()
 
 
-## Objetos de cena (modelos CC0 do Poly Haven): chapéu e bota no rancho, pneus velhos que a maré trouxe.
+## Objetos de cena (modelos CC0 do Poly Haven): chapéu no rancho, pneus velhos que a maré trouxe.
+## (As galochas viraram item: main.gd cria no rancho.)
 func _decoracao() -> void:
 	var r: Vector3 = main.pos_rancho
 	_enfeite("chapeu", r + Vector3(-1.3, 0.98, -1.1), 0.4, Vector3.ZERO)
-	_enfeite("botas", r + Vector3(1.1, 0.53, 1.05), -0.3, Vector3.ZERO)
 	var nf := Vector3(Terreno.NAUFRAGIO.x, 0, Terreno.NAUFRAGIO.y)
 	for off in [Vector3(-6, 0, 3), Vector3(4, 0, -5)]:
 		var p: Vector3 = nf + off

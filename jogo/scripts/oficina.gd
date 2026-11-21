@@ -15,13 +15,14 @@ func _ready() -> void:
 	add_child((load("res://assets/%s.glb" % tipo) as PackedScene).instantiate())
 	if tipo == "bacia":
 		var disco := CylinderMesh.new()
-		disco.top_radius = 0.28
-		disco.bottom_radius = 0.28
-		disco.height = 0.005
+		disco.top_radius = 1.0
+		disco.bottom_radius = 1.0
+		disco.height = 0.004
+		disco.radial_segments = 32
 		_agua_vis = MeshInstance3D.new()
 		_agua_vis.mesh = disco
 		var m := StandardMaterial3D.new()
-		m.albedo_color = Color(0.55, 0.65, 0.7, 0.75)
+		m.albedo_color = Color(0.32, 0.4, 0.42, 0.7)
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.roughness = 0.05
 		_agua_vis.material_override = m
@@ -35,7 +36,11 @@ func _process(delta: float) -> void:
 	if Mundo.rodando and Mundo.chuva > 0.05:
 		agua = minf(1.0, agua + Mundo.chuva * delta * Mundo.acelerar / Mundo.SEGUNDOS_REAIS_POR_HORA)
 	_agua_vis.visible = agua > 0.02
-	_agua_vis.position.y = 0.02 + agua * 0.15
+	# bacia.glb: fundo de dentro em 0.096, borda em 0.238; o raio abre de 0.20 a 0.30 subindo
+	var h := 0.1 + agua * 0.13
+	var r := lerpf(0.2, 0.295, clampf((h - 0.1) / 0.138, 0.0, 1.0))
+	_agua_vis.position.y = h
+	_agua_vis.scale = Vector3(r, 1.0, r)
 
 
 func texto_interacao(j) -> String:

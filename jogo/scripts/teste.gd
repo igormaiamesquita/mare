@@ -49,6 +49,10 @@ func _rodar() -> void:
 	await _usar(main.item_mais_perto("balde", j.global_position))
 	if not j.tem_balde:
 		return _falhar("não pegou o balde")
+	print("1b) galochas")
+	await _usar(main.item_mais_perto("galochas", j.global_position))
+	if not j.galochas:
+		return _falhar("não calçou as galochas")
 
 	print("2) caranguejos")
 	var tentativas := 0

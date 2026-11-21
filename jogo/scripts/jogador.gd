@@ -24,6 +24,7 @@ var lama_no_rosto := 0.0       # horas de proteção contra muriçoca
 var boiando := false
 var aratus := 0
 var tem_tarrafa := false
+var galochas := false          # calçadas: atola menos, arraia e bagre machucam menos
 var _mira := -1.0
 var _mira_alvo := Vector3.ZERO
 var _mira_vis: MeshInstance3D
@@ -444,7 +445,7 @@ func _mover(delta: float) -> void:
 
 	# lama mole: a perna afunda e é preciso puxar (espaço)
 	if na_lama and prof_agua < 0.5 and Terreno.atoleiro(x, z):
-		atolado = minf(1.0, atolado + delta * 0.3 * (entrada.length() + 0.25))
+		atolado = minf(1.0, atolado + delta * (0.16 if galochas else 0.3) * (entrada.length() + 0.25))
 		if atolado > 0.3 and not _aviso_atolado:
 			_aviso_atolado = true
 			Mundo.avisar("Atolou na lama mole! Aperte ESPAÇO para puxar as pernas.", "perigo")
@@ -502,7 +503,7 @@ func _mover(delta: float) -> void:
 			velocity.y -= GRAVIDADE * delta * (0.4 if prof_agua > 0.9 else 1.0)
 		if Input.is_action_just_pressed("pular"):
 			if atolado > 0.05:
-				atolado = maxf(0.0, atolado - 0.3)
+				atolado = maxf(0.0, atolado - (0.45 if galochas else 0.3))
 				estamina -= 3.0
 				_gastou = true
 				_tremor = 0.12
@@ -613,9 +614,12 @@ func _perigos(delta: float, correndo: bool, chao: float) -> void:
 		_aviso_arraia = true
 		Mundo.avisar("Água rasa: arraia gosta de ficar enterrada aqui. Ande devagar, arrastando o pé (sem correr).")
 	if raso and correndo and Terreno.zona(x, z, chao).r + Terreno.zona(x, z, chao).g > 0.5:
-		if randf() < delta * 0.25:
-			mancando = 2.0
-			dano(35.0, "Ferroada de arraia! Dor forte no pé: você vai mancar por um tempo. Na água rasa, não corra.")
+		if randf() < delta * (0.08 if galochas else 0.25):
+			mancando = 1.0 if galochas else 2.0
+			if galochas:
+				dano(15.0, "Ferroada de arraia! A galocha segurou boa parte, mas doeu. Na água rasa, não corra.")
+			else:
+				dano(35.0, "Ferroada de arraia! Dor forte no pé: você vai mancar por um tempo. Na água rasa, não corra.")
 	# MURIÇOCA: amanhecer, entardecer e noite, dentro do mangue; fogo e lama no rosto espantam
 	var hora := Mundo.hora
 	var hora_ruim := hora < 6.6 or hora > 17.3

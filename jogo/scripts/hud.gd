@@ -169,14 +169,14 @@ func _ready() -> void:
 	barra_itens.anchor_right = 1.0
 	barra_itens.anchor_top = 1.0
 	barra_itens.anchor_bottom = 1.0
-	barra_itens.offset_left = -780
+	barra_itens.offset_left = -900
 	barra_itens.offset_right = -28
 	barra_itens.offset_top = -90
 	barra_itens.offset_bottom = -24
 	barra_itens.alignment = BoxContainer.ALIGNMENT_END
 	barra_itens.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	raiz.add_child(barra_itens)
-	for nome in ["balde", "mochila", "facao", "tarrafa", "panela", "lanterna"]:
+	for nome in ["balde", "mochila", "facao", "tarrafa", "galochas", "panela", "lanterna"]:
 		var p := _painel()
 		p.custom_minimum_size = Vector2(98, 62)
 		var l := _label("", 17)
@@ -784,6 +784,7 @@ func _process(_delta: float) -> void:
 	_item("facao", "Facão", true)
 	_item("mochila", "Mochila  I\n%d/%d" % [jogador.espacos_usados(), jogador.MOCHILA_ESPACOS], true)
 	_item("tarrafa", "Tarrafa  T" if jogador.tem_tarrafa else "Tarrafa\n(no rancho)", jogador.tem_tarrafa)
+	_item("galochas", "Galochas\ncalçadas" if jogador.galochas else "Galochas\n(no rancho)", jogador.galochas)
 	_item("panela", "Panelinha", true)
 	_item("lanterna", "Lanterna F\n" + ("ligada" if jogador.lanterna.light_energy > 0.0 else "desligada"), jogador.lanterna.light_energy > 0.0)
 	lbl_estado.text = ""

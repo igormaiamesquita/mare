@@ -83,7 +83,7 @@ func dados() -> Dictionary:
 			"pos": _v(pos), "yaw": j.rotation.y, "fome": j.fome, "estamina": j.estamina, "saude": j.saude,
 			"mancando": j.mancando, "lama": j.lama_no_rosto, "tem_balde": j.tem_balde,
 			"caranguejos": j.caranguejos, "peixes": j.peixes, "aratus": j.aratus, "mochila": j.mochila,
-			"motor_limpo": j.motor_limpo, "tem_tarrafa": j.tem_tarrafa, "reputacao": j.reputacao,
+			"motor_limpo": j.motor_limpo, "tem_tarrafa": j.tem_tarrafa, "galochas": j.galochas, "reputacao": j.reputacao,
 			"stats": j.stats, "comeu": j.comeu, "lanterna": j.lanterna.light_energy > 0.0,
 		},
 		"missoes": {"etapa": main.missoes.etapa, "concluido": main.missoes.concluido},
@@ -181,6 +181,7 @@ func aplicar(d: Dictionary) -> void:
 			j.mochila[k] = int(jd["mochila"][k])
 	j.motor_limpo = bool(jd["motor_limpo"])
 	j.tem_tarrafa = bool(jd["tem_tarrafa"])
+	j.galochas = bool(jd.get("galochas", false))
 	j.reputacao = int(jd["reputacao"])
 	for k in jd["stats"]:
 		j.stats[k] = int(jd["stats"][k])

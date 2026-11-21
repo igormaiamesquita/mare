@@ -3,13 +3,15 @@
 # Convenção: metros, Z para cima, a "frente" de cada objeto aponta para +Y
 # (o exportador glTF converte para Y para cima e frente em -Z, como o Godot espera).
 
-import bpy, bmesh, math, random, os
+import bpy, bmesh, math, random, os, sys
 import numpy as np
 from mathutils import Vector, Matrix, noise
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(BASE, "jogo", "assets")
 os.makedirs(ASSETS, exist_ok=True)
+# Exportar só alguns:  Blender -b -P blender/gerar_assets.py -- rancho.glb rede.glb
+SOMENTE = set(sys.argv[sys.argv.index("--") + 1:]) if "--" in sys.argv else set()
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -73,7 +75,8 @@ def leaf_image():
     path = os.path.join(ASSETS, "folhas_mangue.png")
     image.filepath_raw = path
     image.file_format = 'PNG'
-    image.save()
+    if not SOMENTE:
+        image.save()
     return image
 
 LEAF_IMG = leaf_image()
@@ -235,7 +238,7 @@ EXTERNOS = {"facao.glb", "galao.glb", "panela.glb", "lata_breu.glb", "tronco_cai
 
 
 def export(ob, filename):
-    if filename in EXTERNOS:
+    if filename in EXTERNOS or (SOMENTE and filename not in SOMENTE):
         return
     bpy.ops.object.select_all(action='DESELECT')
     ob.select_set(True)
@@ -550,10 +553,13 @@ def rancho():
     coll = new_coll("rancho")
     parts = []
     W, D, floor_z, wall_h = 4.0, 3.2, 0.5, 2.1
-    # esteios
-    for x in (-W / 2, 0, W / 2):
+    # esteios dos cantos
+    for x in (-W / 2, W / 2):
         for y in (-D / 2, D / 2):
-            parts.append(tube(coll, [(x, y, -0.4), (x + random.uniform(-0.03, 0.03), y, floor_z + wall_h + (0.9 if x == 0 else 0))], [0.07, 0.06], M_MADEIRA_ESC, "esteio", sides=2))
+            parts.append(tube(coll, [(x, y, -0.4), (x + random.uniform(-0.03, 0.03), y, floor_z + wall_h)], [0.07, 0.06], M_MADEIRA_ESC, "esteio", sides=2))
+    # esteios do meio das laterais: sobem até a cumeeira (o vão da porta fica livre)
+    for x in (-W / 2, W / 2):
+        parts.append(tube(coll, [(x, 0, -0.4), (x, 0, floor_z + wall_h + 0.9)], [0.07, 0.06], M_MADEIRA_ESC, "esteio", sides=2))
     # assoalho de tábuas
     n = 14
     for i in range(n):
@@ -574,7 +580,33 @@ def rancho():
     wall(-W / 2, D / 2, W / 2, D / 2)                  # fundo
     wall(-W / 2, -D / 2, -W / 2, D / 2)                # lateral esquerda
     wall(W / 2, -D / 2, W / 2, D / 2, door=(0.0, 0.0)) # lateral direita
-    wall(-W / 2, -D / 2, W / 2, -D / 2, door=(0.38, 0.62))  # frente com porta (frente = -Y)
+    wall(-W / 2, -D / 2, W / 2, -D / 2, door=(0.37, 0.63))  # frente com porta (frente = -Y), vão de x=-0.58 a 0.58
+    # porta: batentes, verga e ripas curtas por cima, para o vão ler como porta
+    porta_h = 1.95
+    for x in (-0.56, 0.56):
+        parts.append(box(coll, (x, -D / 2, floor_z + porta_h / 2), (0.08, 0.09, porta_h), M_MADEIRA_ESC, "batente"))
+    parts.append(box(coll, (0, -D / 2, floor_z + porta_h + 0.04), (1.32, 0.1, 0.08), M_MADEIRA_ESC, "verga"))
+    for i in range(8):
+        x = -0.5 + (i + 0.5) / 8
+        h = wall_h - porta_h - 0.08
+        parts.append(box(coll, (x, -D / 2, floor_z + porta_h + 0.08 + h / 2), (0.12, 0.03, h), M_MADEIRA if i % 3 else M_MADEIRA_ESC, "ripa"))
+    # folha da porta (tábuas com travessas), aberta para dentro, encostada do lado esquerdo
+    folha = []
+    for i in range(6):
+        x = 0.08 + i * 0.16
+        folha.append(box(coll, (x, 0, 0.94), (0.15, 0.025, 1.84), M_MADEIRA, "tabua_porta", rot=(0, random.uniform(-0.01, 0.01), 0)))
+    for z in (0.3, 1.55):
+        folha.append(box(coll, (0.48, 0.03, z), (0.9, 0.03, 0.1), M_MADEIRA_ESC, "travessa"))
+    folha.append(box(coll, (0.48, 0.03, 0.93), (1.3, 0.03, 0.09), M_MADEIRA_ESC, "diagonal", rot=(0, -math.atan2(1.25, 0.8), 0)))
+    ang = math.radians(100)    # quanto a porta está aberta
+    giro = Matrix.Translation((-0.52, -D / 2 + 0.07, floor_z + 0.03)) @ Matrix.Rotation(ang, 4, 'Z')
+    for f in folha:
+        f.data.transform(giro)
+    parts.extend(folha)
+    # armadores (ganchos de pau) nas laterais, onde a rede (rede.glb) é amarrada
+    for x in (-W / 2 + 0.05, W / 2 - 0.05):
+        s = 1 if x < 0 else -1
+        parts.append(tube(coll, [(x, 0.6, floor_z + 1.72), (x + s * 0.1, 0.6, floor_z + 1.74), (x + s * 0.12, 0.6, floor_z + 1.8)], [0.025, 0.022, 0.02], M_MADEIRA_ESC, "armador"))
     # vigas
     for y in (-D / 2, D / 2):
         parts.append(box(coll, (0, y, floor_z + wall_h), (W + 0.3, 0.1, 0.1), M_MADEIRA_ESC, "viga"))
@@ -595,16 +627,89 @@ def rancho():
     parts.append(box(coll, (-1.2, 1.1, floor_z + 0.45), (1.2, 0.4, 0.05), M_MADEIRA, "banco_tampo"))
     for x in (-1.7, -0.7):
         parts.append(box(coll, (x, 1.1, floor_z + 0.22), (0.05, 0.35, 0.45), M_MADEIRA_ESC, "banco_pe"))
-    # rede de dormir pendurada
-    hammock = []
-    for i in range(13):
-        t = i / 12
-        hammock.append((1.6 - t * 3.2 * 0.8 - 0.3, 0.6, floor_z + 1.6 - math.sin(t * math.pi) * 0.75))
-    parts.append(tube(coll, hammock, [0.02] + [0.18] * 11 + [0.02], material("rede", (0.62, 0.18, 0.16), 0.9), "rede"))
     ob = join(parts, "rancho")
     export(ob, "rancho.glb")
 
 rancho()
+
+# ---------------------------------------------------------------- rede de dormir
+
+def rede():
+    """Rede maranhense listrada, com varanda (franja) e punhos de cordinha.
+    Origem = linha dos armadores do rancho (o jogo balança a rede girando em X).
+    Os armadores ficam em x = ±1.94; o pano vai de x = -1.15 a 1.15."""
+    random.seed(41)
+    coll = new_coll("rede")
+    parts = []
+    cores = {
+        "creme": material("rede_creme", (0.86, 0.80, 0.66), 0.95),
+        "vermelho": material("rede_vermelho", (0.62, 0.09, 0.07), 0.9),
+        "laranja": material("rede_laranja", (0.86, 0.40, 0.08), 0.9),
+        "amarelo": material("rede_amarelo", (0.90, 0.70, 0.16), 0.9),
+        "verde": material("rede_verde", (0.10, 0.38, 0.22), 0.9),
+    }
+    varanda = material("rede_varanda", (0.74, 0.68, 0.55), 0.95)
+    for m in list(cores.values()) + [varanda]:
+        m.use_backface_culling = False
+    listras = ["creme", "vermelho", "vermelho", "laranja", "amarelo", "verde", "creme",
+               "creme", "verde", "amarelo", "laranja", "vermelho", "vermelho", "creme"]
+    L = 1.15          # meio comprimento do pano
+    NU, NV = 28, len(listras)
+
+    def ponto(u, v):
+        """u: -1..1 ao longo da rede; v: -1..1 de um lado ao outro do pano."""
+        k = 1 - u * u
+        meia_larg = 0.07 + 0.66 * k ** 0.7
+        x = u * L
+        y = v * meia_larg
+        z = -0.58 - 0.52 * k + 0.20 * v * v * k ** 0.8      # caimento + o pano em concha
+        return Vector((x, y, z))
+
+    bm = bmesh.new()
+    grade = [[bm.verts.new(ponto(-1 + 2 * i / NU, -1 + 2 * j / NV)) for j in range(NV + 1)] for i in range(NU + 1)]
+    mat_idx = {n: i for i, n in enumerate(cores)}
+    for i in range(NU):
+        for j in range(NV):
+            f = bm.faces.new((grade[i][j], grade[i + 1][j], grade[i + 1][j + 1], grade[i][j + 1]))
+            f.material_index = mat_idx[listras[j]]
+    me = bpy.data.meshes.new("pano")
+    bm.to_mesh(me)
+    bm.free()
+    for m in cores.values():
+        me.materials.append(m)
+    pano = link(bpy.data.objects.new("pano", me), coll)
+    parts.append(pano)
+
+    # varanda: faixa de franja pendurada nas duas bordas compridas, com a barra recortada
+    for lado in (-1, 1):
+        bm = bmesh.new()
+        topo, baixo = [], []
+        n = 90
+        for i in range(n + 1):
+            u = -0.82 + 1.64 * i / n
+            p = ponto(u, lado)
+            fora = Vector((0, lado * 0.02, 0))
+            topo.append(bm.verts.new(p))
+            queda = 0.085 if i % 2 == 0 else 0.055
+            baixo.append(bm.verts.new(p + fora + Vector((0, 0, -queda))))
+        for i in range(n):
+            bm.faces.new((topo[i], topo[i + 1], baixo[i + 1], baixo[i]))
+        parts.append(bm_object(coll, bm, "varanda", varanda))
+
+    # punhos: cordinhas que saem da ponta do pano e se juntam num nó; corda até o armador
+    for s in (-1, 1):
+        no = Vector((s * 1.52, 0, -0.30))
+        for j in range(0, NV + 1, 2):
+            p = ponto(s * 1.0, -1 + 2 * j / NV)
+            meio = p.lerp(no, 0.5) + Vector((0, 0, -0.02))
+            parts.append(tube(coll, [tuple(p), tuple(meio), tuple(no)], [0.005, 0.005, 0.006], cores["creme"], "cordinha", sides=1, caps=False))
+        parts.append(sphere(coll, tuple(no), (0.035, 0.03, 0.03), cores["creme"], "no_punho", seg=8, rings=6))
+        armador = Vector((s * 1.86, 0, 0.0))
+        parts.append(tube(coll, [tuple(no), tuple(no.lerp(armador, 0.5) + Vector((0, 0, -0.03))), tuple(armador)], [0.012, 0.012, 0.012], M_CORDA, "corda"))
+    ob = join(parts, "rede")
+    export(ob, "rede.glb")
+
+rede()
 
 # ---------------------------------------------------------------- braço em primeira pessoa
 
@@ -882,12 +987,32 @@ def bancada():
 
 def bacia():
     coll = new_coll("bacia")
-    m = material("bacia_aluminio", (0.6, 0.6, 0.62), 0.35, 0.9)
-    b = cylinder(coll, (0, 0, 0), 0.24, 0.32, 0.18, m, "bacia", seg=28, cap_top=False)
-    mod = b.modifiers.new("e", 'SOLIDIFY'); mod.thickness = 0.005; mod.offset = 1
-    dg = bpy.context.evaluated_depsgraph_get()
-    me = bpy.data.meshes.new_from_object(b.evaluated_get(dg)); b.modifiers.clear(); b.data = me
-    export(join([b], "bacia"), "bacia.glb")
+    """Bacia de alumínio com fundo, borda enrolada e uns amassados, em cima de dois tijolos
+    (assim o chão irregular não atravessa o fundo). O jogo põe a água em oficina.gd:
+    fundo de dentro em z = BASE + 0.006, borda em z = BASE + 0.15 (raio 0.20 -> 0.30)."""
+    random.seed(5)
+    coll = new_coll("bacia")
+    m = material("bacia_aluminio", (0.62, 0.62, 0.64), 0.45, 0.85)
+    BASE = 0.09
+    # perfil (raio, altura): por dentro, sobe, enrola a borda, desce por fora e fecha o fundo
+    perfil = [(0.0, 0.006), (0.18, 0.006), (0.215, 0.015), (0.235, 0.035), (0.300, 0.148),
+              (0.310, 0.162), (0.325, 0.167), (0.336, 0.159), (0.335, 0.148), (0.322, 0.144),
+              (0.305, 0.141), (0.240, 0.031), (0.219, 0.009), (0.18, 0.0), (0.0, 0.0)]
+    bm = bmesh.new()
+    vs = [bm.verts.new((r, 0, z + BASE)) for r, z in perfil]
+    es = [bm.edges.new((vs[i], vs[i + 1])) for i in range(len(vs) - 1)]
+    bmesh.ops.spin(bm, geom=vs + es, axis=(0, 0, 1), cent=(0, 0, 0), steps=36, angle=math.tau, use_duplicate=False)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+    for v in bm.verts:   # amassados: empurra a parede junto (dentro e fora andam iguais)
+        if v.co.z > BASE + 0.03:
+            v.co.x *= 1 + 0.025 * noise.noise(Vector((v.co.x * 9, v.co.y * 9, 3.1)))
+            v.co.y *= 1 + 0.025 * noise.noise(Vector((v.co.x * 9, v.co.y * 9, 3.1)))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    parts = [bm_object(coll, bm, "bacia", m)]
+    tijolo = material("tijolo", (0.52, 0.24, 0.14), 0.95)
+    for y in (-0.12, 0.12):
+        parts.append(box(coll, (random.uniform(-0.02, 0.02), y, BASE / 2), (0.40, 0.11, BASE), tijolo, "tijolo", rot=(0, 0, random.uniform(-0.08, 0.08))))
+    export(join(parts, "bacia"), "bacia.glb")
 
 
 

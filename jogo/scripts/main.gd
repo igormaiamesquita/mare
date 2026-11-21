@@ -90,6 +90,12 @@ func _ready() -> void:
 	# telhados: a chuva não entra no rancho nem na palafita
 	telhado_seco(pos_rancho + Vector3(0, 3.0, 0), Vector3(5.2, 1.6, 4.8))
 	telhado_seco(cultura.palafita_pos + Vector3(0, 5.25, -0.3), Vector3(4.6, 0.9, 5.0))
+	# galochas no rancho (criadas por último para não mudar a numeração dos itens dos jogos salvos)
+	# do lado de fora, ao lado da porta (bota de lama não entra em casa)
+	var pg := pos_rancho + Vector3(1.0, 0, 2.15)
+	pg.y = Terreno.altura(pg.x, pg.z)
+	var gal := criar_item("galochas", pg)
+	gal.rotation.y = 0.4
 	_montando = false
 	_debug()
 
@@ -401,6 +407,9 @@ func _rancho() -> void:
 	_caixa(corpo, Vector3(2.0, 1.6, 0), Vector3(0.12, 2.2, 3.3))          # lado
 	_caixa(corpo, Vector3(-1.25, 1.6, 1.6), Vector3(1.5, 2.2, 0.12))      # frente
 	_caixa(corpo, Vector3(1.25, 1.6, 1.6), Vector3(1.5, 2.2, 0.12))       # frente
+	# folha da porta, aberta para dentro do lado esquerdo (igual ao rancho.glb)
+	var folha := _caixa(corpo, Vector3(-0.6, 1.4, 1.1), Vector3(0.06, 1.84, 0.95))
+	folha.rotation.y = deg_to_rad(10)
 	var rampa := _caixa(corpo, Vector3(0, 0.43, 2.05), Vector3(1.0, 0.06, 0.95))
 	rampa.rotation.x = deg_to_rad(12)
 
@@ -1148,6 +1157,18 @@ func _posicionar(p: Vector3, yaw: float, pitch: float) -> void:
 	jogador.cabeca.rotation.x = pitch
 
 
+## Põe o jogador em `de` (os pés; y=0 assenta no chão) olhando para o ponto `alvo`.
+func _olhar(de: Vector3, alvo: Vector3) -> void:
+	if de.y == 0.0:
+		de.y = Terreno.altura(de.x, de.z) + 0.05
+	jogador.global_position = de
+	jogador.velocity = Vector3.ZERO
+	var olho: Vector3 = jogador.cabeca.global_position
+	var d := alvo - olho
+	jogador.rotation.y = atan2(-d.x, -d.z)
+	jogador.cabeca.rotation.x = atan2(d.y, Vector2(d.x, d.z).length())
+
+
 func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 	hud.tela_inicio.visible = false
 	hud.iniciado = true
@@ -1336,6 +1357,19 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 				Mundo.forcar_chuva(0.0)
 				Mundo.hora = 9.0
 				_posicionar(pos_rancho + Vector3(3, 0, 8), PI * 0.85, -0.25)
+			"porta":
+				Mundo.hora = 8.0
+				_olhar(pos_rancho + Vector3(0.3, 0.0, 5.5), pos_rancho + Vector3(0, 1.3, 1.6))
+			"bacia":
+				Mundo.hora = 9.0
+				_olhar(bacia.global_position + Vector3(0.0, 0.0, 1.1), bacia.global_position)
+				bacia.agua = 0.6
+			"galochas":
+				Mundo.hora = 9.5
+				_olhar(pos_rancho + Vector3(-0.6, 0.0, 4.2), pos_rancho + Vector3(0.6, 0.5, 2.0))
+			"rede":
+				Mundo.hora = 9.5
+				_olhar(pos_rancho + Vector3(0.0, 0.6, 1.2), pos_rancho + Vector3(0.0, 1.1, -0.6))
 			"rancho_dentro":
 				Mundo.hora = 9.5
 				jogador.global_position = pos_rancho + Vector3(0.6, 0.6, 1.3)

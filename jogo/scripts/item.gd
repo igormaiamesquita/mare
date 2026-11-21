@@ -1,5 +1,5 @@
 extends Node3D
-## Coisas que dá para pegar ou usar: balde, feixe de lenha, saco de farinha, rede de dormir.
+## Coisas que dá para pegar ou usar: balde, feixe de lenha, saco de farinha, rede de dormir, galochas.
 
 var tipo := ""
 var conteudo := 0          # caranguejos no balde largado / lenha que ainda sai do tronco
@@ -12,8 +12,11 @@ const MODELOS := {
 	"farinha": "res://assets/saco_farinha.glb",
 	"tronco": "res://assets/tronco_caido.glb",
 	"tarrafa": "res://assets/tarrafa.glb",
+	"galochas": "res://assets/botas.glb",
 }
 var _cortando := false
+var _rede: Node3D             # o modelo da rede, que balança
+var _t := 0.0
 
 
 func _ready() -> void:
@@ -23,6 +26,11 @@ func _ready() -> void:
 	Texturas.alcance(self, 70.0)
 	if tipo == "rede":
 		raio_interacao = 2.2
+		# o item fica no meio do pano; o modelo tem a origem na linha dos armadores, 1.15 m acima
+		_rede = (load("res://assets/rede.glb") as PackedScene).instantiate() as Node3D
+		_rede.position.y = 1.15
+		add_child(_rede)
+		_t = randf() * TAU
 	if tipo == "tronco":
 		raio_interacao = 2.6
 		var corpo := StaticBody3D.new()
@@ -63,6 +71,8 @@ func texto_interacao(j) -> String:
 			return "[E] Deitar na rede e dormir até a próxima maré baixa"
 		"tarrafa":
 			return "[E] Pegar a tarrafa"
+		"galochas":
+			return "[E] Calçar as galochas (atola menos na lama e protege o pé)"
 	return ""
 
 
@@ -95,9 +105,16 @@ func interagir(j) -> void:
 			j.tem_tarrafa = true
 			Mundo.avisar("Pegou a tarrafa! Perto de um cardume, SEGURE T para mirar e SOLTE para jogar.", "objetivo")
 			queue_free()
+		"galochas":
+			j.galochas = true
+			Mundo.avisar("Calçou as galochas: a lama mole prende menos e o pé fica protegido da arraia.", "objetivo")
+			queue_free()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _rede != null:
+		_t += delta
+		_rede.rotation.x = sin(_t * 0.8) * 0.035 + sin(_t * 0.31) * 0.015
 	# a maré leva o que ficou no chão
 	if tipo == "balde" and conteudo + peixes > 0 and Mundo.nivel_mare() > global_position.y + 0.15:
 		Mundo.avisar("A maré alcançou o balde e tudo fugiu: %d caranguejos e %d peixes!" % [conteudo, peixes], "perigo")

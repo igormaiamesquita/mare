@@ -3,7 +3,7 @@
 # Exporta com o mesmo nome dos modelos que substituem, então o jogo troca sem mudar código.
 # Rodar depois de gerar_assets.py:  Blender -b -P blender/importar_externos.py
 
-import bpy, os, math
+import bpy, os, math, sys
 from mathutils import Matrix, Vector
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,7 +31,12 @@ MODELOS = {
     "fern_02": ("samambaia.glb", 0.8, Matrix(), 0),
 }
 # peças que ficam de fora (o píer vem com sobras: postes soltos, tábuas e um pórtico)
-SO_ESTES = {"modular_wooden_pier": ["section_01", "section_02", "section_03", "section_04"]}
+SO_ESTES = {"modular_wooden_pier": ["section_01", "section_02", "section_03", "section_04"],
+            "rubber_boots": ["dirty_l", "dirt_r"]}   # só o par sujo de lama (o modelo traz dois pares)
+# modelos que vêm fora do lugar: centraliza em X/Y e assenta no chão (z = 0)
+CENTRALIZAR = {"rubber_boots"}
+# Importar só alguns:  Blender -b -P blender/importar_externos.py -- rubber_boots machete
+SOMENTE = set(sys.argv[sys.argv.index("--") + 1:]) if "--" in sys.argv else set()
 
 
 def processar(k, saida, escala, ajuste, alvo):
@@ -58,6 +63,9 @@ def processar(k, saida, escala, ajuste, alvo):
         if o != ob:
             bpy.data.objects.remove(o)
     ob.data.transform(Matrix.Scale(escala, 4) @ ajuste)
+    if k in CENTRALIZAR:
+        xs = [v.co.x for v in ob.data.vertices]; ys = [v.co.y for v in ob.data.vertices]; zs = [v.co.z for v in ob.data.vertices]
+        ob.data.transform(Matrix.Translation((-(min(xs) + max(xs)) / 2, -(min(ys) + max(ys)) / 2, -min(zs))))
     faces = len(ob.data.polygons)
     if alvo and faces > alvo:
         mod = ob.modifiers.new("simplificar", 'DECIMATE')
@@ -70,5 +78,7 @@ def processar(k, saida, escala, ajuste, alvo):
 
 
 for k, (saida, escala, ajuste, alvo) in MODELOS.items():
+    if SOMENTE and k not in SOMENTE:
+        continue
     processar(k, saida, escala, ajuste, alvo)
 print("EXTERNOS OK")
