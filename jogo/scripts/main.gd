@@ -423,7 +423,8 @@ func _rancho() -> void:
 	criar_item("balde", pos_rancho + Vector3(1.2, 0.53, 0.7))
 	criar_item("farinha", pos_rancho + Vector3(-1.45, 0.53, -1.05))
 	criar_item("rede", pos_rancho + Vector3(0.0, 1.1, -0.6))
-	criar_item("tarrafa", pos_rancho + Vector3(1.4, 0.53, -1.0))
+	# pendurada pela alça no gancho da parede da frente (por fora, à esquerda da porta), como se guarda para secar
+	criar_item("tarrafa", pos_rancho + Vector3(-1.05, 1.64, 1.9))
 
 	fogao = Node3D.new()
 	fogao.name = "FogaoRancho"
@@ -1437,6 +1438,9 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 				jogador.olhou = 1000.0
 				Mundo.rodando = true
 				_olhar(pos_rancho + Vector3(-1.5, 0.0, 6.5), pos_rancho + Vector3(1.0, 0.3, 2.15))
+			"tarrafa":
+				Mundo.hora = 8.5
+				_olhar(pos_rancho + Vector3(-0.7, 0.0, 3.6), pos_rancho + Vector3(-1.05, 1.9, 1.9))
 			"porta":
 				Mundo.hora = 8.0
 				_olhar(pos_rancho + Vector3(0.3, 0.0, 5.5), pos_rancho + Vector3(0, 1.3, 1.6))

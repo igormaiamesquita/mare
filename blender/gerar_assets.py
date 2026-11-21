@@ -603,6 +603,8 @@ def rancho():
     for f in folha:
         f.data.transform(giro)
     parts.extend(folha)
+    # gancho de pau na parede da frente, por fora, à esquerda da porta: ali fica a tarrafa pendurada
+    parts.append(tube(coll, [(-1.05, -D / 2, floor_z + 1.66), (-1.05, -D / 2 - 0.16, floor_z + 1.68), (-1.05, -D / 2 - 0.25, floor_z + 1.76)], [0.024, 0.021, 0.018], M_MADEIRA_ESC, "gancho_tarrafa"))
     # armadores (ganchos de pau) nas laterais, onde a rede (rede.glb) é amarrada
     for x in (-W / 2 + 0.05, W / 2 - 0.05):
         s = 1 if x < 0 else -1
