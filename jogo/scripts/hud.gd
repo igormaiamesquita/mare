@@ -398,6 +398,7 @@ func _criar_telas() -> void:
 		["Continuar", true, continuar],
 		["Configurações", false, _abrir_config],
 		["Pular os primeiros passos", false, _pular_passos, "pular"],
+		["Novo jogo", false, _novo_jogo_pausa, "novo"],
 		["Salvar e sair", false, _sair],
 	])
 	tela_pausa.visible = false
@@ -475,6 +476,9 @@ func preparar_inicio() -> void:
 	lista.append(["Configurações", false, _abrir_config])
 	lista.append(["Sair", false, get_tree().quit])
 	_linha_inicio = _botoes(tela_inicio, lista)
+	if Config.comecar_direto:
+		Config.comecar_direto = false
+		comecar()
 
 
 ## Linha de botões no fim de uma tela (início/pausa). Cada item: [texto, destaque, ação, nome opcional].
@@ -536,6 +540,21 @@ func _pular_passos() -> void:
 	continuar()
 
 
+## Pede confirmação (segundo clique), apaga o jogo salvo e recomeça do zero.
+func _novo_jogo_pausa() -> void:
+	var b := tela_pausa.find_child("novo", true, false) as Button
+	if not b.has_meta("confirmar"):
+		b.set_meta("confirmar", true)
+		b.text = "Apagar o jogo atual e começar de novo?  (clique de novo)"
+		b.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
+		return
+	main.salvador.apagar()
+	main.salvador.ativo = false        # não deixa salvar o jogo velho por cima no caminho
+	Mundo.reiniciar()
+	Config.comecar_direto = true
+	get_tree().reload_current_scene()
+
+
 func _sair() -> void:
 	if main.salvador.ativo:
 		main.salvador.salvar()
@@ -550,6 +569,11 @@ func comecar() -> void:
 
 
 func continuar() -> void:
+	var novo := tela_pausa.find_child("novo", true, false) as Button
+	if novo != null and novo.has_meta("confirmar"):
+		novo.remove_meta("confirmar")
+		novo.text = "Novo jogo"
+		novo.add_theme_color_override("font_color", BRANCO)
 	tela_pausa.visible = false
 	tela_fim.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

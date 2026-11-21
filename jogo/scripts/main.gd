@@ -1140,11 +1140,36 @@ func _debug() -> void:
 		_tirar_fotos.call_deferred(fotos.split(","), saida)
 	if "--medir" in OS.get_cmdline_user_args():
 		_medir.call_deferred()
+	if "--teste-novo-jogo" in OS.get_cmdline_user_args():
+		_teste_novo_jogo.call_deferred()
 	if "--teste" in OS.get_cmdline_user_args():
 		var t := Node.new()
 		t.set_script(load("res://scripts/teste.gd"))
 		t.main = self
 		add_child(t)
+
+
+## Testa "Novo jogo" na pausa: recarrega a cena e confere se tudo voltou ao começo.
+## godot --headless --path jogo -- --teste-novo-jogo
+func _teste_novo_jogo() -> void:
+	await get_tree().create_timer(0.5).timeout
+	if Config.has_meta("novo_jogo_testado"):
+		var ok: bool = hud.iniciado and absf(Mundo.hora - 6.0) < 0.1 and Mundo.dia == 1 and not jogador.tem_balde and tutorial.ativo == bool(Config.v["primeiros_passos"])
+		print("NOVO JOGO: iniciado=%s hora=%.2f dia=%d balde=%s passos=%s -> %s" % [hud.iniciado, Mundo.hora, Mundo.dia, jogador.tem_balde, tutorial.ativo, "OK" if ok else "FALHOU"])
+		get_tree().quit(0 if ok else 1)
+		return
+	Config.set_meta("novo_jogo_testado", true)
+	salvador.ativo = false
+	hud.comecar()
+	Mundo.hora = 15.0
+	Mundo.dia = 3
+	jogador.tem_balde = true
+	hud._novo_jogo_pausa()        # 1º clique: pede confirmação
+	if Mundo.hora != 15.0:
+		print("NOVO JOGO: apagou sem confirmar -> FALHOU")
+		get_tree().quit(1)
+		return
+	hud._novo_jogo_pausa()        # 2º clique: recomeça
 
 
 ## Mede o tempo de processador por quadro (sem desenhar), parado no mangue.

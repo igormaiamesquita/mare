@@ -36,6 +36,19 @@ func _ready() -> void:
 	_criar_acoes()
 
 
+## Volta o relógio, o tempo e a maré para o começo (novo jogo sem fechar o programa).
+func reiniciar() -> void:
+	hora = 6.0
+	dia = 1
+	chuva = 0.0
+	nuvens = 0.25
+	_alvo_chuva = 0.0
+	_alvo_nuvens = 0.25
+	_hora_chuva = 0.0
+	acelerar = 1.0
+	rodando = false
+
+
 func _process(delta: float) -> void:
 	if not rodando:
 		return

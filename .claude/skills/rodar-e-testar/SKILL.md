@@ -30,6 +30,9 @@ Rode na ordem e não pule nenhuma:
 
 `SCRIPT ERROR` **não** derruba o jogo: a função para, mas o código de saída continua 0. Por isso, sempre procure no log com `grep`. Os avisos de vazamento de RID/ObjectDB ao fechar em modo headless são normais.
 
+4. **Novo jogo pela pausa** (só se mexer em menus, salvar ou no `Mundo`): tem que imprimir `NOVO JOGO: ... -> OK`:
+   `timeout 120 "$G" --headless --path jogo -- --teste-novo-jogo 2>&1 | grep "NOVO JOGO"`
+
 Quando a mudança cria uma mecânica nova, inclua um passo para ela em `jogo/scripts/teste.gd`.
 
 ## Fotos automáticas (para comparar antes e depois)

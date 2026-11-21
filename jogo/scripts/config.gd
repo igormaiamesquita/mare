@@ -4,6 +4,8 @@ extends Node
 
 signal mudou
 
+var comecar_direto := false     # depois de "Novo jogo" na pausa: recarrega e já começa (não é salvo)
+
 const ARQUIVO := "user://config.cfg"
 const PRESETS := ["Baixa", "Média", "Alta", "Ultra", "Personalizada"]
 const ESCALAS := [0.0, 0.5, 0.67, 0.75, 1.0]          # 0 = automática (pelo tamanho da tela)
