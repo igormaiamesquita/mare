@@ -604,7 +604,7 @@ def rancho():
         f.data.transform(giro)
     parts.extend(folha)
     # gancho de pau na parede da frente, por fora, à esquerda da porta: ali fica a tarrafa pendurada
-    parts.append(tube(coll, [(-1.05, -D / 2, floor_z + 1.66), (-1.05, -D / 2 - 0.16, floor_z + 1.68), (-1.05, -D / 2 - 0.25, floor_z + 1.76)], [0.024, 0.021, 0.018], M_MADEIRA_ESC, "gancho_tarrafa"))
+    parts.append(tube(coll, [(-1.05, -D / 2, floor_z + 1.92), (-1.05, -D / 2 - 0.2, floor_z + 1.94), (-1.05, -D / 2 - 0.3, floor_z + 2.02)], [0.024, 0.021, 0.018], M_MADEIRA_ESC, "gancho_tarrafa"))
     # armadores (ganchos de pau) nas laterais, onde a rede (rede.glb) é amarrada
     for x in (-W / 2 + 0.05, W / 2 - 0.05):
         s = 1 if x < 0 else -1
@@ -1018,23 +1018,134 @@ def bacia():
 
 
 
+def malha_rede_imagem(nome, n=6, tam=512, fio=0.09, fundo=None):
+    """Textura de malha de nylon em losango, com nós e fundo transparente (repete sem emenda)."""
+    rng = np.random.default_rng(3)
+    yy, xx = np.mgrid[0:tam, 0:tam].astype(np.float32) / tam
+    a = (xx + yy) * n
+    b = (xx - yy) * n
+    d1 = np.abs(a - np.round(a))
+    d2 = np.abs(b - np.round(b))
+    linha = np.clip(1.0 - np.minimum(d1, d2) / fio, 0.0, 1.0)
+    no = np.clip(1.0 - np.sqrt(d1 ** 2 + d2 ** 2) / (fio * 2.2), 0.0, 1.0)     # nó onde os fios se cruzam
+    alfa = np.clip(np.maximum(linha, no) * 1.6, 0.0, 1.0)
+    img = np.zeros((tam, tam, 4), dtype=np.float32)
+    tom = 0.9 + 0.1 * rng.random((tam, tam)).astype(np.float32)
+    sujo = 0.85 + 0.15 * np.sin(xx * 6.0 + 1.3) * np.sin(yy * 5.0)
+    for c, base in enumerate((0.84, 0.82, 0.74)):
+        img[..., c] = base * tom * sujo * (1.0 - 0.25 * no)
+    img[..., 3] = alfa
+    if fundo is not None:     # versão sem furos: o vão vira a sombra de dentro do bolo de rede
+        for c in range(3):
+            img[..., c] = img[..., c] * alfa + fundo[c] * (1.0 - alfa)
+        img[..., 3] = 1.0
+    image = bpy.data.images.new(nome, tam, tam, alpha=True)
+    image.pixels.foreach_set(img[::-1].ravel())
+    image.pack()
+    return image
+
+
+def material_rede(nome, image, vazada=True):
+    """Material de rede: textura com recorte pelo alfa (vira alphaMode MASK no glTF), dos dois lados.
+    vazada=False: sem recorte (o miolo, que dá volume de longe)."""
+    m = bpy.data.materials.new(nome)
+    m.use_nodes = True
+    nt = m.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+    bsdf.inputs["Roughness"].default_value = 0.75
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = image
+    corte = nt.nodes.new("ShaderNodeMath")
+    corte.operation = 'GREATER_THAN'
+    corte.inputs[1].default_value = 0.5
+    nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    if vazada:
+        nt.links.new(tex.outputs["Alpha"], corte.inputs[0])
+        nt.links.new(corte.outputs[0], bsdf.inputs["Alpha"])
+    m.use_backface_culling = False
+    try:
+        m.surface_render_method = 'DITHERED'
+    except Exception:
+        pass
+    return m
+
+
 def tarrafa():
+    """Tarrafa pendurada para secar: corda de mão enrolada e destorcedor em cima, o pano de rede caindo
+    em dobras (várias camadas) e a chumbada pesada embaixo. Origem = ponto onde ela fica pendurada
+    (o gancho); a rede desce até z = -COMP."""
+    random.seed(23)
     coll = new_coll("tarrafa")
-    rede = material("rede_tarrafa", (0.75, 0.75, 0.7), 0.8)
-    chumbo = material("chumbo", (0.25, 0.25, 0.27), 0.5, 0.8)
-    # rede recolhida: um monte em cone com dobras
-    bm = bmesh.new()
-    bmesh.ops.create_cone(bm, cap_ends=True, segments=20, radius1=0.25, radius2=0.04, depth=0.45)
-    for v in bm.verts:
-        v.co.x *= 1 + 0.12 * noise.noise(v.co * 8)
-        v.co.y *= 1 + 0.12 * noise.noise(v.co * 8 + Vector((2, 0, 0)))
-    bmesh.ops.translate(bm, vec=(0, 0, 0.225), verts=bm.verts)
-    monte = bm_object(coll, bm, "monte", rede)
-    parts = [monte]
-    for i in range(14):
-        a = i / 14 * math.tau
-        parts.append(sphere(coll, (math.cos(a) * 0.26, math.sin(a) * 0.26, 0.02), (0.018, 0.018, 0.018), chumbo, "chumbo", seg=6, rings=4))
-    parts.append(tube(coll, [(0, 0, 0.45), (0.05, 0.1, 0.55), (0.15, 0.15, 0.5)], [0.006] * 3, M_CORDA, "corda"))
+    COMP = 1.4
+    rede_m = material_rede("rede_tarrafa", malha_rede_imagem("malha_tarrafa"))
+    miolo_m = material_rede("rede_tarrafa_miolo", malha_rede_imagem("malha_tarrafa_miolo", fundo=(0.30, 0.29, 0.25)), vazada=False)
+    chumbo = material("chumbo", (0.22, 0.22, 0.24), 0.45, 0.85)
+    metal = material("destorcedor", (0.55, 0.55, 0.56), 0.35, 0.9)
+    corda = material("corda_tarrafa", (0.62, 0.55, 0.42), 0.9)
+    parts = []
+
+    def raio(t):
+        # estreita em cima (presa no destorcedor), abre e engorda; a chumbada puxa a boca um pouco para dentro
+        r = 0.03 + 0.2 * t ** 0.8
+        k = max(0.0, (t - 0.86) / 0.14)
+        return r * (1.0 - 0.16 * k * k)
+
+    def pano(nome, escala, fase, dobras, u_rep, v_rep, mat=None):
+        NA, NZ = 56, 44
+        bm = bmesh.new()
+        uv = bm.loops.layers.uv.new("UVMap")
+        grade = []
+        for j in range(NZ + 1):
+            t = j / NZ
+            linha = []
+            for i in range(NA + 1):
+                th = i / NA * math.tau
+                torce = fase + 0.35 * noise.noise(Vector((t * 3.0, fase, 0.0)))
+                amp = (0.02 + 0.06 * t) * (0.6 + 0.4 * noise.noise(Vector((th * 1.3, t * 4.0, fase))))
+                r = (raio(t) + amp * math.sin(dobras * th + torce)) * escala
+                z = -t * COMP + 0.03 * noise.noise(Vector((math.cos(th) * 2, math.sin(th) * 2, fase))) * t
+                linha.append(bm.verts.new((r * math.cos(th), r * math.sin(th), z)))
+            grade.append(linha)
+        for j in range(NZ):
+            for i in range(NA):
+                f = bm.faces.new((grade[j][i], grade[j][i + 1], grade[j + 1][i + 1], grade[j + 1][i]))
+                for loop, (ii, jj) in zip(f.loops, [(i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1)]):
+                    loop[uv].uv = (ii / NA * u_rep, jj / NZ * v_rep + fase)
+        return bm_object(coll, bm, nome, mat or rede_m)
+
+    # três camadas de pano com as dobras desencontradas: dá a densidade da rede amontoada
+    parts.append(pano("pano_fora", 1.0, 0.0, 11, 6, 7))
+    parts.append(pano("pano_meio", 0.82, 1.7, 9, 5, 6))
+    parts.append(pano("pano_dentro", 0.7, 3.1, 7, 4, 5, miolo_m))
+
+    # chumbada: fileira de chumbinhos em volta da barra, seguindo as dobras e meio embolada
+    n = 72
+    for i in range(n):
+        th = i / n * math.tau
+        r = raio(1.0) * (0.86 + 0.1 * math.sin(11 * th)) + random.uniform(-0.012, 0.012)
+        z = -COMP + 0.03 * math.sin(5 * th + 0.7) + random.uniform(-0.015, 0.015)
+        tang = Vector((-math.sin(th), math.cos(th), 0.0))
+        c = Vector((r * math.cos(th), r * math.sin(th), z))
+        parts.append(tube(coll, [tuple(c - tang * 0.011), tuple(c + tang * 0.011)], [0.0075, 0.0075], chumbo, "chumbinho", sides=1))
+    # a barra (corda da chumbada) passando pelos chumbinhos
+    pts = []
+    for i in range(n + 1):
+        th = i / n * math.tau
+        r = raio(1.0) * (0.86 + 0.1 * math.sin(11 * th))
+        pts.append((r * math.cos(th), r * math.sin(th), -COMP + 0.03 * math.sin(5 * th + 0.7)))
+    parts.append(tube(coll, pts, [0.004] * len(pts), corda, "barra", caps=False))
+
+    # destorcedor (argola de metal) e a corda de mão: sobe até o gancho e fica enrolada do lado
+    parts.append(cylinder(coll, (0, 0, -0.06), 0.012, 0.012, 0.05, metal, "destorcedor", seg=10))
+    parts.append(tube(coll, [(0, 0, -0.06), (0, 0, -0.01), (0, 0.01, 0.0)], [0.006] * 3, corda, "corda_subida"))
+    for k in range(4):     # rolo de corda de mão: laçadas penduradas no mesmo gancho, na frente da rede
+        pts = []
+        larg = 0.07 + 0.008 * k
+        alt = 0.26 + 0.03 * k
+        for i in range(29):
+            a = i / 28 * math.tau
+            pts.append((larg * math.sin(a) + 0.01 * k, 0.035 + 0.008 * k, -alt * (1 - math.cos(a)) / 2))
+        parts.append(tube(coll, pts, [0.0055] * len(pts), corda, "lacada", caps=False))
     export(join(parts, "tarrafa"), "tarrafa.glb")
 
 tarrafa()

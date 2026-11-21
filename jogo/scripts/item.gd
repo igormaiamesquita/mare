@@ -22,7 +22,10 @@ var _t := 0.0
 func _ready() -> void:
 	add_to_group("interagivel")
 	if MODELOS.has(tipo):
-		add_child((load(MODELOS[tipo]) as PackedScene).instantiate())
+		var m := (load(MODELOS[tipo]) as PackedScene).instantiate() as Node3D
+		add_child(m)
+		if tipo == "tarrafa":
+			m.position.y = 0.7     # o modelo pende do gancho; o item (onde se mira) fica no meio da rede
 	Texturas.alcance(self, 70.0)
 	if tipo == "rede":
 		raio_interacao = 2.2

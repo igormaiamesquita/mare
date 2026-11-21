@@ -182,9 +182,9 @@ func _ready() -> void:
 	facao.rotation_degrees = Vector3(35, -12, -20)
 	tarrafa_vis = _modelo("tarrafa")
 	camera.add_child(tarrafa_vis)
-	tarrafa_vis.position = FACAO_BASE + Vector3(0.02, 0.06, 0.04)
-	tarrafa_vis.scale = Vector3.ONE * 0.42
-	tarrafa_vis.rotation_degrees = Vector3(10, -20, -8)
+	tarrafa_vis.position = FACAO_BASE + Vector3(0.0, 0.2, -0.04)   # a mão segura no destorcedor; a rede pende
+	tarrafa_vis.scale = Vector3.ONE * 0.32
+	tarrafa_vis.rotation_degrees = Vector3(6, -20, -4)
 	tarrafa_vis.visible = false
 
 	mao_crab = _modelo("caranguejo")
@@ -792,7 +792,8 @@ func _lancar_tarrafa(alvo_p: Vector3) -> void:
 	cone.top_radius = 0.06
 	cone.bottom_radius = 2.2
 	cone.height = 0.45
-	cone.radial_segments = 24
+	cone.radial_segments = 40
+	cone.rings = 6
 	cone.cap_bottom = false
 	rede.mesh = cone
 	rede.material_override = _material_rede()
@@ -845,15 +846,20 @@ static var _mat_rede: StandardMaterial3D
 func _material_rede() -> StandardMaterial3D:
 	if _mat_rede != null:
 		return _mat_rede
-	var img := Image.create_empty(64, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-	for i in 64:
-		for k in [0, 1, 32, 33]:
-			img.set_pixel(i, k, Color(0.85, 0.85, 0.8, 1))
-			img.set_pixel(k, i, Color(0.85, 0.85, 0.8, 1))
+	# malha em losango (a mesma ideia da textura do modelo da tarrafa)
+	var tam := 128
+	var n := 4.0
+	var img := Image.create_empty(tam, tam, false, Image.FORMAT_RGBA8)
+	for y in tam:
+		for x in tam:
+			var a := (float(x) + float(y)) / tam * n
+			var b := (float(x) - float(y)) / tam * n
+			var d := minf(absf(a - roundf(a)), absf(b - roundf(b)))
+			img.set_pixel(x, y, Color(0.84, 0.82, 0.74, 1.0) if d < 0.06 else Color(0, 0, 0, 0))
+	img.generate_mipmaps()
 	_mat_rede = StandardMaterial3D.new()
 	_mat_rede.albedo_texture = ImageTexture.create_from_image(img)
-	_mat_rede.uv1_scale = Vector3(16, 4, 1)
+	_mat_rede.uv1_scale = Vector3(18, 5, 1)
 	_mat_rede.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	_mat_rede.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_mat_rede.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
