@@ -88,6 +88,8 @@ var mg := {}
 var segurando := {}
 var _gastou := false
 var _bob := 0.0
+var luz_perto: OmniLight3D
+const LANTERNA := 6.0
 var olhou := 0.0               # quanto o mouse já girou a câmera (primeiros passos)
 var _tremor := 0.0
 var _aviso_fome := false
@@ -131,13 +133,23 @@ func _ready() -> void:
 	camera.current = true
 
 	lanterna = SpotLight3D.new()
-	lanterna.spot_range = 30.0
-	lanterna.spot_angle = 28.0
+	lanterna.spot_range = 42.0
+	lanterna.spot_angle = 34.0
+	lanterna.spot_angle_attenuation = 0.6
+	lanterna.spot_attenuation = 0.7
 	lanterna.light_energy = 0.0
 	lanterna.light_color = Color(1.0, 0.95, 0.85)
 	lanterna.shadow_enabled = true
 	lanterna.position = Vector3(0.15, -0.1, 0)
 	camera.add_child(lanterna)
+	# luz fraca em volta, junto com a lanterna: o que está perto (pés, mãos) não some no escuro
+	luz_perto = OmniLight3D.new()
+	luz_perto.omni_range = 6.0
+	luz_perto.light_energy = 0.35
+	luz_perto.light_color = Color(1.0, 0.95, 0.85)
+	luz_perto.position = Vector3(0, -0.2, -0.6)
+	luz_perto.visible = false
+	camera.add_child(luz_perto)
 
 	braco = _modelo("braco")
 	camera.add_child(braco)
@@ -544,7 +556,7 @@ func _procurar_alvo() -> void:
 
 func _teclas() -> void:
 	if Input.is_action_just_pressed("lanterna"):
-		lanterna.light_energy = 0.0 if lanterna.light_energy > 0.0 else 4.0
+		lanterna.light_energy = 0.0 if lanterna.light_energy > 0.0 else LANTERNA
 	if Input.is_action_just_pressed("balde") and tem_balde:
 		largar_balde()
 	if Input.is_action_just_pressed("construir"):
@@ -1086,22 +1098,28 @@ func _fim_decisao() -> void:
 
 # ------------------------------------------------------------------ dormir / desmaiar
 
+## Deita na rede: abre a escolha de quantas horas dormir (tela_sono.gd).
 func dormir() -> void:
 	estado = Estado.OCUPADO
+	Mundo.rodando = false
+	hud.tela_sono.abrir()
+
+
+func dormir_horas(h: float) -> void:
+	estado = Estado.OCUPADO
+	Mundo.rodando = true
 	await hud.escurecer(1.0)
-	var h := Mundo.horas_ate_mare_baixa() - 1.0
-	if h < 1.0:
-		h += Mundo.PERIODO_MARE
 	await hud.passar_tempo("Dormindo na rede", h)
 	fome = maxf(0.0, fome - h * 1.6)
-	estamina = estamina_max
-	saude = minf(100.0, saude + 60.0)
-	mancando = 0.0
+	estamina = minf(estamina_max, estamina + estamina_max * h / 4.0)
+	saude = minf(100.0, saude + h * 8.0)
+	mancando = maxf(0.0, mancando - h)
 	main.repovoar(h)
 	await get_tree().create_timer(0.6).timeout
 	await hud.escurecer(0.0)
 	estado = Estado.ANDANDO
-	Mundo.avisar("Dormiu %s e acordou às %s (dia %d). A maré está vazando: as tocas vão aparecer." % [Mundo.texto_duracao(h), Mundo.texto_hora(), Mundo.dia])
+	var mare := "a maré está enchendo" if Mundo.mare_subindo() else "a maré está vazando"
+	Mundo.avisar("Dormiu %s e acordou às %s (dia %d): %s." % [Mundo.texto_duracao(h), Mundo.texto_hora(), Mundo.dia, mare])
 	if main.salvador.ativo:
 		main.salvador.salvar()
 		Mundo.avisar("Jogo salvo.")
@@ -1137,6 +1155,7 @@ func desmaiar(motivo: String) -> void:
 # ------------------------------------------------------------------ visual
 
 func _visual(delta: float) -> void:
+	luz_perto.visible = lanterna.light_energy > 0.0
 	var hv := Vector2(velocity.x, velocity.z).length()
 	if is_on_floor() or nadando:
 		_bob += delta * hv * 2.3

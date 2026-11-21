@@ -187,7 +187,7 @@ func aplicar(d: Dictionary) -> void:
 	for k in jd["stats"]:
 		j.stats[k] = int(jd["stats"][k])
 	j.comeu = bool(jd["comeu"])
-	j.lanterna.light_energy = 4.0 if bool(jd["lanterna"]) else 0.0
+	j.lanterna.light_energy = j.LANTERNA if bool(jd["lanterna"]) else 0.0
 
 	main.missoes.etapa = int(d["missoes"]["etapa"])
 	main.missoes.concluido = bool(d["missoes"]["concluido"])

@@ -536,6 +536,22 @@ func _rodar() -> void:
 		j.global_position.distance_to(pos_salva) < 0.5, main.barco.canoa.gasolina, n_jiraus, n_jiraus2])
 	if not ok_c or j.mochila["farofa"] != 2 or j.caranguejos != 3 or not j.tem_tarrafa or absf(Mundo.hora - 9.25) > 0.01 or absf(main.barco.canoa.gasolina - gas) > 0.1:
 		return _falhar("o jogo carregado não bate com o salvo")
+	print("9) dormir na rede escolhendo as horas")
+	await _usar(main.item_mais_perto("rede", j.global_position))
+	await _tela(2)
+	if not main.hud.tela_sono.visible:
+		return _falhar("a rede não abriu a escolha de horas")
+	main.hud.tela_sono._por(5.0)
+	var t_antes: float = Mundo.tempo_total()
+	main.hud.tela_sono.confirmar()
+	var espera_sono := 0
+	while j.estado != 0 and espera_sono < 4000:
+		espera_sono += 1
+		await _quadros(1)
+	var dormiu: float = Mundo.tempo_total() - t_antes
+	print("   dormiu %.2f h (pediu 5)" % dormiu)
+	if absf(dormiu - 5.0) > 0.2:
+		return _falhar("dormiu um tempo diferente do escolhido")
 	print("6) maré alta")
 	for h in [9.0, 10.0, 11.0, 12.0]:
 		print("   %02d:00  nível %.2f  (chão do mangue ~0.75, teso %.1f, rancho %.1f)" % [int(h), Mundo.nivel_mare_em(h), Terreno.ALTURA_TESO, Terreno.ALTURA_RANCHO])

@@ -186,7 +186,7 @@ func _luz() -> void:
 	var ang_l := ang - Mundo.fase_lua() * TAU
 	var dir_lua := Vector3(cos(ang_l), sin(ang_l), -0.3).normalized()
 	lua.look_at_from_position(Vector3.ZERO, -dir_lua, Vector3.UP)
-	lua.light_energy = (1.0 - dia) * 0.3 * Mundo.luz_lua() * (1.0 - cobertura * 0.8)
+	lua.light_energy = (1.0 - dia) * (0.12 + 0.45 * Mundo.luz_lua()) * (1.0 - cobertura * 0.7)
 	lua.visible = dir_lua.y > 0.05 and lua.light_energy > 0.01
 	var crep := clampf(1.0 - absf(e) / 0.3, 0.0, 1.0)
 	var cinza := Color(0.45, 0.47, 0.5)
@@ -203,7 +203,7 @@ func _luz() -> void:
 	ceu.set_shader_parameter("nuvens", nuv)
 	ceu.set_shader_parameter("chuva", chu)
 	var relampago := _relampago
-	ambiente.ambient_light_energy = lerpf(0.22, 1.0, dia) * (1.0 - chu * 0.35) + relampago * 3.0
+	ambiente.ambient_light_energy = lerpf(0.34, 1.0, dia) * (1.0 - chu * 0.35) + relampago * 3.0
 	ambiente.ambient_light_color = Color(0.55, 0.5, 0.42).lerp(Color(0.25, 0.3, 0.45), 1.0 - dia).lerp(Color(0.45, 0.48, 0.52), cobertura * 0.6)
 	ambiente.fog_light_color = horizonte.darkened(0.1)
 	var neblina_manha := crep * 0.007 if Mundo.hora < 12.0 else 0.0
@@ -1218,6 +1218,7 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 			hud.abrir_inventario(false)
 		hud.tela_pausa.visible = false
 		hud.tela_config.visible = false
+		hud.tela_sono.visible = false
 		if not nome.begins_with("inicio"):
 			hud.tela_inicio.visible = false
 		if nome != "segurando":
@@ -1353,7 +1354,7 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 				Mundo.hora = 22.6
 				_posicionar(Vector3(-12, 0, -18), PI * 0.8, 0.15)
 				jogador.global_position.y = maxf(jogador.global_position.y, Mundo.nivel_mare() - 1.2)
-				jogador.lanterna.light_energy = 4.0
+				jogador.lanterna.light_energy = jogador.LANTERNA
 				jogador.tem_balde = true
 				Mundo.rodando = true
 			"mira_tarrafa":
@@ -1399,6 +1400,11 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 				Mundo.forcar_chuva(0.0)
 				Mundo.hora = 9.0
 				_posicionar(pos_rancho + Vector3(3, 0, 8), PI * 0.85, -0.25)
+			"sono":
+				Mundo.hora = 19.0
+				_olhar(pos_rancho + Vector3(0.0, 0.6, 1.2), pos_rancho + Vector3(0.0, 1.1, -0.6))
+				jogador.dormir()
+				hud.tela_sono._por(10.5)
 			"pausa":
 				Mundo.hora = 8.0
 				_olhar(pos_rancho + Vector3(0.3, 0.0, 5.5), pos_rancho + Vector3(0, 1.3, 1.6))
@@ -1510,7 +1516,7 @@ func _tirar_fotos(lista: PackedStringArray, saida: String) -> void:
 				fogao.lenha = 2
 				fogao.acender()
 				_posicionar(pos_rancho + Vector3(2.0, 0, 9.5), deg_to_rad(20), -0.1)
-				jogador.lanterna.light_energy = 4.0
+				jogador.lanterna.light_energy = jogador.LANTERNA
 			"perigo":
 				jogador.lanterna.light_energy = 0.0
 				Mundo.rodando = false

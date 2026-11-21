@@ -68,7 +68,7 @@ func texto_interacao(j) -> String:
 				return "A mochila está cheia"
 			return "[E] Encher a cuia de farinha (vai na mochila)"
 		"rede":
-			return "[E] Deitar na rede e dormir até a próxima maré baixa"
+			return "[E] Deitar na rede e dormir (escolha quantas horas)"
 		"tarrafa":
 			return "[E] Pegar a tarrafa"
 		"galochas":

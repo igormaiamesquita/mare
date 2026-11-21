@@ -42,6 +42,7 @@ var tela_inicio: Control
 var tela_pausa: Control
 var tela_fim: Control
 var tela_config: Control
+var tela_sono: Control
 var painel_passos: PanelContainer
 var txt_passos: RichTextLabel
 var _linha_inicio: Control
@@ -300,6 +301,11 @@ func _ready() -> void:
 	tela_config.set_script(load("res://scripts/tela_config.gd"))
 	tela_config.main = main
 	raiz.add_child(tela_config)
+	tela_sono = ColorRect.new()
+	tela_sono.set_script(load("res://scripts/tela_sono.gd"))
+	tela_sono.main = main
+	raiz.add_child(tela_sono)
+	tela_sono.escolheu.connect(func(h: float) -> void: jogador.dormir_horas(h))
 	Mundo.noticia.connect(_noticia)
 	_ligar_mapas.call_deferred()
 	preparar_inicio.call_deferred()

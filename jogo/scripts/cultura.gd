@@ -180,7 +180,9 @@ func _palafita() -> void:
 	var comp := topo.distance_to(pe)
 	var rampa := _caixa(corpo, meio, Vector3(0.9, 0.08, comp + 0.3))
 	rampa.rotation.x = atan2(topo.y - pe.y, pe.z - topo.z)
-	main.criar_item("rede", palafita_pos + Vector3(0.6, piso + 0.6, -0.5))
+	# a palafita é mais estreita que o rancho: rede no meio, um pouco mais curta
+	var rp: Node3D = main.criar_item("rede", palafita_pos + Vector3(0.0, piso + 0.6, -0.5))
+	rp._rede.scale.x = 0.92
 	main.criar_item("lenha", palafita_pos + Vector3(-1.2, piso + 0.05, -1.0))
 
 
